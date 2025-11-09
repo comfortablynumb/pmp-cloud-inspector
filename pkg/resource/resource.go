@@ -52,13 +52,13 @@ type Relationship struct {
 type RelationType string
 
 const (
-	RelationContains     RelationType = "contains"      // e.g., VPC contains Subnets
-	RelationBelongsTo    RelationType = "belongs_to"    // e.g., Subnet belongs to VPC
-	RelationAttachedTo   RelationType = "attached_to"   // e.g., SecurityGroup attached to Instance
-	RelationAssumes      RelationType = "assumes"       // e.g., Service assumes Role
-	RelationHasAccess    RelationType = "has_access"    // e.g., User has access to Resource
-	RelationReferences   RelationType = "references"    // Generic reference
-	RelationDependsOn    RelationType = "depends_on"    // Dependency relationship
+	RelationContains   RelationType = "contains"    // e.g., VPC contains Subnets
+	RelationBelongsTo  RelationType = "belongs_to"  // e.g., Subnet belongs to VPC
+	RelationAttachedTo RelationType = "attached_to" // e.g., SecurityGroup attached to Instance
+	RelationAssumes    RelationType = "assumes"     // e.g., Service assumes Role
+	RelationHasAccess  RelationType = "has_access"  // e.g., User has access to Resource
+	RelationReferences RelationType = "references"  // Generic reference
+	RelationDependsOn  RelationType = "depends_on"  // Dependency relationship
 )
 
 // Collection holds all discovered resources

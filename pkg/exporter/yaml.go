@@ -25,8 +25,8 @@ func (e *YAMLExporter) Export(collection *resource.Collection, writer io.Writer,
 
 	encoder := yaml.NewEncoder(writer)
 	defer func() {
-		// Ignore error on close since we can't return it from defer
-		_ = encoder.Close()
+		//nolint:errcheck // Ignore error on close since we can't return it from defer
+		encoder.Close()
 	}()
 
 	if options.Pretty {
