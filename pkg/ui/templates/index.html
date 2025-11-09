@@ -33,6 +33,25 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+        .tab-button {
+            transition: all 0.2s;
+        }
+        .tab-button.active {
+            border-bottom-color: #2563eb;
+            color: #2563eb;
+        }
+        .drift-added {
+            background-color: #d1fae5;
+            border-left: 4px solid #10b981;
+        }
+        .drift-removed {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+        }
+        .drift-modified {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -59,24 +78,82 @@
         <!-- Upload Section -->
         <div id="upload-section" class="max-w-2xl mx-auto">
             <div class="bg-white rounded-lg shadow-md p-8">
-                <div class="text-center">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <h3 class="mt-2 text-lg font-medium text-gray-900">Upload Resource Export</h3>
-                    <p class="mt-1 text-sm text-gray-500">JSON or YAML files from PMP Cloud Inspector</p>
-                    <div class="mt-6">
-                        <label for="file-upload" class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            Select File
-                            <input id="file-upload" name="file" type="file" class="sr-only" accept=".json,.yaml,.yml">
-                        </label>
+                <!-- Mode Tabs -->
+                <div class="flex border-b border-gray-200 mb-6">
+                    <button id="tab-single" class="tab-button active px-6 py-3 border-b-2 border-blue-600 text-blue-600 font-medium">
+                        Single Upload
+                    </button>
+                    <button id="tab-compare" class="tab-button px-6 py-3 border-b-2 border-transparent text-gray-500 font-medium hover:text-gray-700">
+                        Compare Exports
+                    </button>
+                </div>
+
+                <!-- Single Upload Mode -->
+                <div id="mode-single" class="upload-mode">
+                    <div class="text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <h3 class="mt-2 text-lg font-medium text-gray-900">Upload Resource Export</h3>
+                        <p class="mt-1 text-sm text-gray-500">JSON or YAML files from PMP Cloud Inspector</p>
+                        <div class="mt-6">
+                            <label for="file-upload" class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                Select File
+                                <input id="file-upload" name="file" type="file" class="sr-only" accept=".json,.yaml,.yml">
+                            </label>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">
+                            Supported formats: JSON, YAML
+                        </p>
                     </div>
-                    <p class="mt-2 text-xs text-gray-500">
-                        Supported formats: JSON, YAML
-                    </p>
+                </div>
+
+                <!-- Compare Mode -->
+                <div id="mode-compare" class="upload-mode hidden">
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Compare Two Exports</h3>
+                            <p class="text-sm text-gray-500 mb-6">Upload two export files to identify added, removed, and modified resources.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition">
+                                <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <p class="mt-2 text-sm font-medium text-gray-700">Base Export (older)</p>
+                                <label for="base-file-upload" class="cursor-pointer mt-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                    Select Base File
+                                    <input id="base-file-upload" name="baseFile" type="file" class="sr-only" accept=".json,.yaml,.yml">
+                                </label>
+                                <p id="base-file-name" class="mt-2 text-xs text-gray-500"></p>
+                            </div>
+
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition">
+                                <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <p class="mt-2 text-sm font-medium text-gray-700">Compare Export (newer)</p>
+                                <label for="compare-file-upload" class="cursor-pointer mt-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                    Select Compare File
+                                    <input id="compare-file-upload" name="compareFile" type="file" class="sr-only" accept=".json,.yaml,.yml">
+                                </label>
+                                <p id="compare-file-name" class="mt-2 text-xs text-gray-500"></p>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button id="compare-btn" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                Compare Exports
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -86,6 +163,64 @@
             <div class="text-center hidden" id="loading-content">
                 <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 <p class="mt-4 text-gray-600">Loading resources...</p>
+            </div>
+        </div>
+
+        <!-- Drift Results Section -->
+        <div id="drift-section" class="hidden">
+            <div class="mb-6">
+                <button id="back-to-upload" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to Upload
+                </button>
+            </div>
+
+            <!-- Drift Summary -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Drift Summary</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <p class="text-3xl font-bold text-green-600" id="drift-added-count">0</p>
+                        <p class="text-sm text-gray-600">Added</p>
+                    </div>
+                    <div class="text-center p-4 bg-red-50 rounded-lg">
+                        <p class="text-3xl font-bold text-red-600" id="drift-removed-count">0</p>
+                        <p class="text-sm text-gray-600">Removed</p>
+                    </div>
+                    <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                        <p class="text-3xl font-bold text-yellow-600" id="drift-modified-count">0</p>
+                        <p class="text-sm text-gray-600">Modified</p>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <p class="text-3xl font-bold text-gray-600" id="drift-unchanged-count">0</p>
+                        <p class="text-sm text-gray-600">Unchanged</p>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <p><strong>Base:</strong> <span id="drift-base-time"></span></p>
+                    <p><strong>Compare:</strong> <span id="drift-compare-time"></span></p>
+                </div>
+            </div>
+
+            <!-- Drift Tabs -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex border-b border-gray-200 mb-6">
+                    <button class="drift-tab active px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-medium" data-tab="added">
+                        Added (<span id="tab-added-count">0</span>)
+                    </button>
+                    <button class="drift-tab px-4 py-2 border-b-2 border-transparent text-gray-500 font-medium hover:text-gray-700" data-tab="removed">
+                        Removed (<span id="tab-removed-count">0</span>)
+                    </button>
+                    <button class="drift-tab px-4 py-2 border-b-2 border-transparent text-gray-500 font-medium hover:text-gray-700" data-tab="modified">
+                        Modified (<span id="tab-modified-count">0</span>)
+                    </button>
+                </div>
+
+                <div id="drift-content-added" class="drift-content space-y-4"></div>
+                <div id="drift-content-removed" class="drift-content hidden space-y-4"></div>
+                <div id="drift-content-modified" class="drift-content hidden space-y-4"></div>
             </div>
         </div>
 
@@ -189,6 +324,9 @@
     <script>
         let allResources = [];
         let filteredResources = [];
+        let driftData = null;
+        let baseFileData = null;
+        let compareFileData = null;
 
         // File upload handler
         $('#file-upload').on('change', function() {
@@ -366,6 +504,257 @@
         $('#search').on('input', applyFilters);
         $('#filter-provider').on('change', applyFilters);
         $('#filter-type').on('change', applyFilters);
+
+        // Tab switching for upload modes
+        $('#tab-single').on('click', function() {
+            $('.tab-button').removeClass('active').addClass('text-gray-500').css('border-bottom-color', 'transparent');
+            $(this).addClass('active').removeClass('text-gray-500').css('border-bottom-color', '#2563eb');
+            $('#mode-single').removeClass('hidden');
+            $('#mode-compare').addClass('hidden');
+        });
+
+        $('#tab-compare').on('click', function() {
+            $('.tab-button').removeClass('active').addClass('text-gray-500').css('border-bottom-color', 'transparent');
+            $(this).addClass('active').removeClass('text-gray-500').css('border-bottom-color', '#2563eb');
+            $('#mode-single').addClass('hidden');
+            $('#mode-compare').removeClass('hidden');
+        });
+
+        // File selection for compare mode
+        $('#base-file-upload').on('change', function() {
+            baseFileData = this.files[0];
+            if (baseFileData) {
+                $('#base-file-name').text(baseFileData.name);
+                checkCompareReady();
+            }
+        });
+
+        $('#compare-file-upload').on('change', function() {
+            compareFileData = this.files[0];
+            if (compareFileData) {
+                $('#compare-file-name').text(compareFileData.name);
+                checkCompareReady();
+            }
+        });
+
+        function checkCompareReady() {
+            if (baseFileData && compareFileData) {
+                $('#compare-btn').prop('disabled', false);
+            }
+        }
+
+        // Compare button handler
+        $('#compare-btn').on('click', function() {
+            if (!baseFileData || !compareFileData) return;
+
+            $('#loading-content').removeClass('hidden');
+            $('#upload-section').hide();
+
+            const formData = new FormData();
+            formData.append('baseFile', baseFileData);
+            formData.append('compareFile', compareFileData);
+
+            $.ajax({
+                url: '/compare',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        driftData = response;
+                        displayDriftResults(response);
+                    } else {
+                        alert('Error: ' + response.error);
+                        resetUpload();
+                    }
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON ? xhr.responseJSON.error : 'Comparison failed';
+                    alert('Error: ' + error);
+                    resetUpload();
+                },
+                complete: function() {
+                    $('#loading-content').addClass('hidden');
+                }
+            });
+        });
+
+        // Display drift results
+        function displayDriftResults(data) {
+            $('#drift-section').removeClass('hidden');
+
+            // Update summary counts
+            $('#drift-added-count').text(data.summary.total_added);
+            $('#drift-removed-count').text(data.summary.total_removed);
+            $('#drift-modified-count').text(data.summary.total_modified);
+            $('#drift-unchanged-count').text(data.summary.total_unchanged);
+
+            $('#tab-added-count').text(data.summary.total_added);
+            $('#tab-removed-count').text(data.summary.total_removed);
+            $('#tab-modified-count').text(data.summary.total_modified);
+
+            // Format timestamps
+            $('#drift-base-time').text(new Date(data.base_timestamp).toLocaleString());
+            $('#drift-compare-time').text(new Date(data.compare_timestamp).toLocaleString());
+
+            // Render drift content
+            renderDriftResources('added', data.added);
+            renderDriftResources('removed', data.removed);
+            renderModifiedResources(data.modified);
+        }
+
+        function renderDriftResources(type, resources) {
+            const container = $(`#drift-content-${type}`);
+            container.empty();
+
+            if (!resources || resources.length === 0) {
+                container.append('<p class="text-gray-500 text-center py-8">No ' + type + ' resources</p>');
+                return;
+            }
+
+            resources.forEach(resource => {
+                const card = createDriftCard(resource, type);
+                container.append(card);
+            });
+        }
+
+        function renderModifiedResources(modified) {
+            const container = $('#drift-content-modified');
+            container.empty();
+
+            if (!modified || modified.length === 0) {
+                container.append('<p class="text-gray-500 text-center py-8">No modified resources</p>');
+                return;
+            }
+
+            modified.forEach(diff => {
+                const card = createModifiedCard(diff);
+                container.append(card);
+            });
+        }
+
+        function createDriftCard(resource, type) {
+            const providerColors = {
+                'aws': 'bg-orange-100 text-orange-800',
+                'github': 'bg-gray-800 text-white',
+                'gcp': 'bg-blue-100 text-blue-800',
+                'gitlab': 'bg-orange-100 text-orange-800',
+                'jfrog': 'bg-green-100 text-green-800',
+                'azure': 'bg-blue-100 text-blue-800'
+            };
+
+            const typeDisplay = resource.type.split(':').pop();
+            const providerColor = providerColors[resource.provider] || 'bg-gray-100 text-gray-800';
+            const driftClass = type === 'added' ? 'drift-added' : 'drift-removed';
+            const icon = type === 'added' ? '+' : '-';
+
+            return $(`
+                <div class="border border-gray-200 rounded-lg p-4 ${driftClass}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="text-2xl font-bold">${icon}</span>
+                                <span class="badge ${providerColor}">${resource.provider.toUpperCase()}</span>
+                                <span class="badge bg-gray-100 text-gray-700">${typeDisplay}</span>
+                                ${resource.region ? `<span class="badge bg-blue-100 text-blue-700">${resource.region}</span>` : ''}
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-1">${resource.name}</h3>
+                            <p class="text-sm text-gray-500">ID: ${resource.id}</p>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        function createModifiedCard(diff) {
+            const providerColors = {
+                'aws': 'bg-orange-100 text-orange-800',
+                'github': 'bg-gray-800 text-white',
+                'gcp': 'bg-blue-100 text-blue-800',
+                'gitlab': 'bg-orange-100 text-orange-800',
+                'jfrog': 'bg-green-100 text-green-800',
+                'azure': 'bg-blue-100 text-blue-800'
+            };
+
+            const typeDisplay = diff.resource_type.split(':').pop();
+            const provider = diff.base_resource ? diff.base_resource.provider : 'unknown';
+            const providerColor = providerColors[provider] || 'bg-gray-100 text-gray-800';
+
+            let changesHtml = '';
+            Object.entries(diff.changes).forEach(([field, change]) => {
+                const oldValue = formatDriftValue(change.old);
+                const newValue = formatDriftValue(change.new);
+                changesHtml += `
+                    <div class="py-2 border-b border-gray-200 last:border-0">
+                        <p class="text-sm font-medium text-gray-700">${field}</p>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div class="text-xs">
+                                <span class="text-red-600">- </span>
+                                <span class="text-gray-600">${oldValue}</span>
+                            </div>
+                            <div class="text-xs">
+                                <span class="text-green-600">+ </span>
+                                <span class="text-gray-600">${newValue}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            return $(`
+                <div class="border border-gray-200 rounded-lg p-4 drift-modified">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="text-2xl font-bold">~</span>
+                                <span class="badge ${providerColor}">${provider.toUpperCase()}</span>
+                                <span class="badge bg-gray-100 text-gray-700">${typeDisplay}</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-1">${diff.name}</h3>
+                            <p class="text-sm text-gray-500">ID: ${diff.resource_id}</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded p-3 mt-3">
+                        <p class="text-xs font-semibold text-gray-700 mb-2">${Object.keys(diff.changes).length} Change(s)</p>
+                        ${changesHtml}
+                    </div>
+                </div>
+            `);
+        }
+
+        function formatDriftValue(value) {
+            if (value === null || value === undefined) {
+                return '<nil>';
+            }
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+            return String(value);
+        }
+
+        // Drift tab switching
+        $('.drift-tab').on('click', function() {
+            const tab = $(this).data('tab');
+            $('.drift-tab').removeClass('active').addClass('text-gray-500').css('border-bottom-color', 'transparent');
+            $(this).addClass('active').removeClass('text-gray-500').css('border-bottom-color', '#2563eb');
+
+            $('.drift-content').addClass('hidden');
+            $(`#drift-content-${tab}`).removeClass('hidden');
+        });
+
+        // Back to upload button
+        $('#back-to-upload').on('click', function() {
+            $('#drift-section').addClass('hidden');
+            $('#upload-section').show();
+            $('#base-file-upload').val('');
+            $('#compare-file-upload').val('');
+            $('#base-file-name').text('');
+            $('#compare-file-name').text('');
+            baseFileData = null;
+            compareFileData = null;
+            $('#compare-btn').prop('disabled', true);
+        });
     </script>
 </body>
 </html>
