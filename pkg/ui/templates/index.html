@@ -321,9 +321,9 @@
                 propertiesHtml = limitedProps.map(([key, value]) => {
                     const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
                     return `
-                        <div class="flex justify-between py-2 border-b border-gray-100">
-                            <span class="text-sm font-medium text-gray-600">${key}:</span>
-                            <span class="text-sm text-gray-900 truncate-text ml-2" style="max-width: 200px;" title="${displayValue}">${displayValue}</span>
+                        <div class="grid grid-cols-[auto_1fr] gap-3 py-2 border-b border-gray-100" style="max-width: 500px;">
+                            <span class="text-sm font-medium text-gray-600 text-right">${key}:</span>
+                            <span class="text-sm text-gray-900 truncate-text" title="${displayValue}">${displayValue}</span>
                         </div>
                     `;
                 }).join('');
