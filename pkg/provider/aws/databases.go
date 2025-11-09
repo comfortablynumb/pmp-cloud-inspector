@@ -74,11 +74,11 @@ func (p *Provider) convertMemoryDBClusterToResource(cluster *memorydbTypes.Clust
 	}
 
 	properties := map[string]interface{}{
-		"status":       safeString(cluster.Status),
-		"node_type":    safeString(cluster.NodeType),
-		"engine":       safeString(cluster.Engine),
-		"num_shards":   safeInt32(cluster.NumberOfShards),
-		"tls_enabled":  safeBool(cluster.TLSEnabled),
+		"status":      safeString(cluster.Status),
+		"node_type":   safeString(cluster.NodeType),
+		"engine":      safeString(cluster.Engine),
+		"num_shards":  safeInt32(cluster.NumberOfShards),
+		"tls_enabled": safeBool(cluster.TLSEnabled),
 	}
 
 	if cluster.Description != nil {
@@ -123,11 +123,11 @@ func (p *Provider) convertElastiCacheClusterToResource(cluster *elasticacheTypes
 	}
 
 	properties := map[string]interface{}{
-		"status":              safeString(cluster.CacheClusterStatus),
-		"node_type":           safeString(cluster.CacheNodeType),
-		"engine":              safeString(cluster.Engine),
-		"num_cache_nodes":     safeInt32(cluster.NumCacheNodes),
-		"preferred_az":        safeString(cluster.PreferredAvailabilityZone),
+		"status":          safeString(cluster.CacheClusterStatus),
+		"node_type":       safeString(cluster.CacheNodeType),
+		"engine":          safeString(cluster.Engine),
+		"num_cache_nodes": safeInt32(cluster.NumCacheNodes),
+		"preferred_az":    safeString(cluster.PreferredAvailabilityZone),
 	}
 
 	if cluster.EngineVersion != nil {

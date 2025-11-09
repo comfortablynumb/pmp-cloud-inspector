@@ -87,12 +87,12 @@ type Collection struct {
 
 // CollectionMetadata provides information about the collection
 type CollectionMetadata struct {
-	Timestamp      time.Time                       `json:"timestamp"`
-	TotalCount     int                             `json:"total_count"`
-	ByType         map[ResourceType]int            `json:"by_type"`
-	ByProvider     map[string]int                  `json:"by_provider"`
-	ByAccount      map[string]int                  `json:"by_account,omitempty"`
-	ByRegion       map[string]int                  `json:"by_region,omitempty"`
+	Timestamp       time.Time                       `json:"timestamp"`
+	TotalCount      int                             `json:"total_count"`
+	ByType          map[ResourceType]int            `json:"by_type"`
+	ByProvider      map[string]int                  `json:"by_provider"`
+	ByAccount       map[string]int                  `json:"by_account,omitempty"`
+	ByRegion        map[string]int                  `json:"by_region,omitempty"`
 	ByTypeAndRegion map[string]map[ResourceType]int `json:"by_type_and_region,omitempty"`
 }
 
