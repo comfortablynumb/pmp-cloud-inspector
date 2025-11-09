@@ -35,9 +35,25 @@ const (
 	TypeGitHubTeam         ResourceType = "github:team"
 	TypeGitHubUser         ResourceType = "github:user"
 
-	// Future providers can add their types here
-	// TypeGCPProject ResourceType = "gcp:project"
-	// TypeOktaUser   ResourceType = "okta:user"
+	// GitLab Resource Types
+	TypeGitLabProject ResourceType = "gitlab:project"
+	TypeGitLabGroup   ResourceType = "gitlab:group"
+	TypeGitLabUser    ResourceType = "gitlab:user"
+
+	// JFrog Resource Types
+	TypeJFrogRepository ResourceType = "jfrog:repository"
+	TypeJFrogUser       ResourceType = "jfrog:user"
+	TypeJFrogGroup      ResourceType = "jfrog:group"
+	TypeJFrogPermission ResourceType = "jfrog:permission"
+
+	// GCP Resource Types
+	TypeGCPProject         ResourceType = "gcp:project"
+	TypeGCPComputeInstance ResourceType = "gcp:compute:instance"
+	TypeGCPVPC             ResourceType = "gcp:compute:network"
+	TypeGCPSubnet          ResourceType = "gcp:compute:subnetwork"
+	TypeGCPStorageBucket   ResourceType = "gcp:storage:bucket"
+	TypeGCPCloudFunction   ResourceType = "gcp:cloudfunctions:function"
+	TypeGCPCloudRun        ResourceType = "gcp:run:service"
 )
 
 // Resource represents a cloud resource

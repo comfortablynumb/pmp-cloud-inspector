@@ -23,15 +23,32 @@ providers:
   #   options:
   #     token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-  # Future providers can be added here
+  # GitLab Provider
+  # - name: gitlab
+  #   # Groups to inspect (empty = all accessible projects)
+  #   accounts:
+  #     - my-group-name
+  #   options:
+  #     token: "glpat-xxxxxxxxxxxxxxxxxxxx"
+  #     base_url: "https://gitlab.com"  # Optional: for self-hosted
+
+  # JFrog Artifactory Provider
+  # - name: jfrog
+  #   options:
+  #     base_url: "https://mycompany.jfrog.io"
+  #     api_key: "AKCxxxxxxxxxxxxxxxxxxxx"
+  #     # OR use username/password:
+  #     # username: "admin"
+  #     # password: "password"
+
+  # GCP Provider
   # - name: gcp
-  #   accounts: []
-  #   regions: []
-  #   options: {}
-  #
-  # - name: okta
-  #   accounts: []
-  #   options: {}
+  #   regions:
+  #     - us-central1
+  #     - us-east1
+  #   options:
+  #     project_id: "my-gcp-project"
+  #     credentials_file: "/path/to/service-account-key.json"  # Optional
 
 # Resource configuration
 resources:
@@ -60,6 +77,23 @@ resources:
   #   - github:repository
   #   - github:team
   #   - github:user
+  # Available GitLab types:
+  #   - gitlab:project
+  #   - gitlab:group
+  #   - gitlab:user
+  # Available JFrog types:
+  #   - jfrog:repository
+  #   - jfrog:user
+  #   - jfrog:group
+  #   - jfrog:permission
+  # Available GCP types:
+  #   - gcp:project
+  #   - gcp:compute:instance
+  #   - gcp:compute:network
+  #   - gcp:compute:subnetwork
+  #   - gcp:storage:bucket
+  #   - gcp:cloudfunctions:function
+  #   - gcp:run:service
   types: []
 
   # Collect all available resource types
