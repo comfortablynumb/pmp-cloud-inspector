@@ -14,6 +14,15 @@ providers:
     # Provider-specific options
     options: {}
 
+  # GitHub Provider
+  # - name: github
+  #   # Organizations to inspect (empty = all user's organizations)
+  #   accounts:
+  #     - my-org-name
+  #   # GitHub requires a personal access token
+  #   options:
+  #     token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
   # Future providers can be added here
   # - name: gcp
   #   accounts: []
@@ -35,6 +44,11 @@ resources:
   #   - aws:ec2:subnet
   #   - aws:ec2:security-group
   #   - aws:ecr:repository
+  # Available GitHub types:
+  #   - github:organization
+  #   - github:repository
+  #   - github:team
+  #   - github:user
   types: []
 
   # Collect all available resource types

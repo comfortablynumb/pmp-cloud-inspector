@@ -22,6 +22,12 @@
 - Security Groups
 - ECR Repositories
 
+### GitHub
+- Organizations
+- Repositories
+- Teams
+- Users
+
 More providers (GCP, Okta, JFrog, etc.) coming soon!
 
 ## Installation
@@ -187,6 +193,12 @@ Available AWS resource types:
 - `aws:ec2:security-group`
 - `aws:ecr:repository`
 
+Available GitHub resource types:
+- `github:organization`
+- `github:repository`
+- `github:team`
+- `github:user`
+
 ### Export
 
 Configure output format and options:
@@ -295,6 +307,30 @@ Required IAM permissions:
 - `ec2:DescribeRegions`
 - `ecr:DescribeRepositories`
 - `sts:GetCallerIdentity`
+
+## GitHub Authentication
+
+The GitHub provider requires a personal access token for authentication.
+
+To create a personal access token:
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Click "Generate new token (classic)"
+3. Give it a descriptive name
+4. Select scopes (minimum required):
+   - `read:org` - Read organization data
+   - `repo` - Access repositories (for private repos)
+   - `admin:org` - Read organization teams and members
+
+Configure the token in your config file:
+
+```yaml
+providers:
+  - name: github
+    accounts:
+      - my-organization
+    options:
+      token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
 
 ## Contributing
 
