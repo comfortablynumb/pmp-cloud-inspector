@@ -20,7 +20,16 @@
 - VPCs
 - Subnets
 - Security Groups
+- EC2 Instances
 - ECR Repositories
+- EKS Clusters
+- Load Balancers (Classic ELB, ALB, NLB)
+- Lambda Functions
+- API Gateway (REST & HTTP APIs)
+- CloudFront Distributions
+- MemoryDB Clusters
+- ElastiCache Clusters
+- Secrets Manager Secrets
 
 ### GitHub
 - Organizations
@@ -191,7 +200,18 @@ Available AWS resource types:
 - `aws:ec2:vpc`
 - `aws:ec2:subnet`
 - `aws:ec2:security-group`
+- `aws:ec2:instance`
 - `aws:ecr:repository`
+- `aws:eks:cluster`
+- `aws:elb:classic`
+- `aws:elb:application`
+- `aws:elb:network`
+- `aws:lambda:function`
+- `aws:apigateway:api`
+- `aws:cloudfront:distribution`
+- `aws:memorydb:cluster`
+- `aws:elasticache:cluster`
+- `aws:secretsmanager:secret`
 
 Available GitHub resource types:
 - `github:organization`
@@ -304,8 +324,19 @@ Required IAM permissions:
 - `ec2:DescribeVpcs`
 - `ec2:DescribeSubnets`
 - `ec2:DescribeSecurityGroups`
+- `ec2:DescribeInstances`
 - `ec2:DescribeRegions`
 - `ecr:DescribeRepositories`
+- `eks:ListClusters`
+- `eks:DescribeCluster`
+- `elasticloadbalancing:DescribeLoadBalancers`
+- `elasticloadbalancing:DescribeTags`
+- `lambda:ListFunctions`
+- `apigateway:GET`
+- `cloudfront:ListDistributions`
+- `memorydb:DescribeClusters`
+- `elasticache:DescribeCacheClusters`
+- `secretsmanager:ListSecrets`
 - `sts:GetCallerIdentity`
 
 ## GitHub Authentication
@@ -346,7 +377,7 @@ See LICENSE file for details.
 - [ ] Azure provider support
 - [ ] Okta provider support
 - [ ] JFrog provider support
-- [ ] More AWS resource types (EC2, RDS, S3, etc.)
+- [ ] Additional AWS resource types (RDS, S3, DynamoDB, SQS, SNS, etc.)
 - [ ] Advanced filtering and querying
 - [ ] Resource change detection
 - [ ] Cost estimation
