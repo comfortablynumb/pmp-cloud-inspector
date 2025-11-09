@@ -43,7 +43,18 @@ resources:
   #   - aws:ec2:vpc
   #   - aws:ec2:subnet
   #   - aws:ec2:security-group
+  #   - aws:ec2:instance
   #   - aws:ecr:repository
+  #   - aws:eks:cluster
+  #   - aws:elb:classic
+  #   - aws:elb:application
+  #   - aws:elb:network
+  #   - aws:lambda:function
+  #   - aws:apigateway:api
+  #   - aws:cloudfront:distribution
+  #   - aws:memorydb:cluster
+  #   - aws:elasticache:cluster
+  #   - aws:secretsmanager:secret
   # Available GitHub types:
   #   - github:organization
   #   - github:repository

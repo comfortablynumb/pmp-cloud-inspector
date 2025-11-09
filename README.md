@@ -8,8 +8,10 @@
 - **Comprehensive Resource Discovery**: Automatically discovers and catalogs cloud resources
 - **Relationship Mapping**: Discovers and tracks relationships between resources
 - **Multiple Export Formats**: Export to JSON, YAML, or GraphViz DOT format
+- **Web UI**: Beautiful web interface for viewing and exploring resources (Tailwind CSS + jQuery)
 - **Flexible Configuration**: YAML-based configuration for fine-grained control
 - **Resource Filtering**: Select specific resource types or collect all available resources
+- **Search & Filter**: Search and filter resources by provider, type, region, and more in the web UI
 
 ## Supported Providers
 
@@ -20,7 +22,16 @@
 - VPCs
 - Subnets
 - Security Groups
+- EC2 Instances
 - ECR Repositories
+- EKS Clusters
+- Load Balancers (Classic ELB, ALB, NLB)
+- Lambda Functions
+- API Gateway (REST & HTTP APIs)
+- CloudFront Distributions
+- MemoryDB Clusters
+- ElastiCache Clusters
+- Secrets Manager Secrets
 
 ### GitHub
 - Organizations
@@ -104,49 +115,70 @@ export:
 2. Run the inspector:
 
 ```bash
-./pmp-cloud-inspector -c config.yaml -o output.json
+./pmp-cloud-inspector inspect -c config.yaml -o output.json
 ```
 
 ## Usage
 
+PMP Cloud Inspector provides two main commands:
+
+### `inspect` - Inspect and Export Resources
+
+Inspect cloud resources and export them to various formats.
+
 ```bash
-pmp-cloud-inspector [flags]
+pmp-cloud-inspector inspect [flags]
 ```
 
-### Flags
-
+**Flags:**
 - `-c, --config string`: Path to configuration file (default "config.yaml")
 - `-o, --output string`: Output file (defaults to stdout)
 - `-f, --format string`: Output format: json, yaml, dot (overrides config)
 - `-p, --pretty`: Pretty print output (default true)
 - `--include-raw`: Include raw cloud provider data
 
-### Examples
+**Examples:**
 
-**Export all AWS resources to JSON:**
+Export all AWS resources to JSON:
 ```bash
-pmp-cloud-inspector -c config.yaml -o resources.json
+pmp-cloud-inspector inspect -c config.yaml -o resources.json
 ```
 
-**Export specific resource types to YAML:**
-```yaml
-# config.yaml
-resources:
-  types:
-    - aws:iam:user
-    - aws:iam:role
-  include_all: false
+Export specific resource types to YAML:
+```bash
+pmp-cloud-inspector inspect -c config.yaml -f yaml -o iam-resources.yaml
 ```
 
+Generate a GraphViz visualization:
 ```bash
-pmp-cloud-inspector -c config.yaml -f yaml -o iam-resources.yaml
-```
-
-**Generate a GraphViz visualization:**
-```bash
-pmp-cloud-inspector -c config.yaml -f dot -o resources.dot
+pmp-cloud-inspector inspect -c config.yaml -f dot -o resources.dot
 dot -Tpng resources.dot -o resources.png
 ```
+
+### `ui` - Web Interface
+
+Start a web server with a beautiful UI for viewing cloud resources.
+
+```bash
+pmp-cloud-inspector ui [flags]
+```
+
+**Flags:**
+- `-p, --port int`: Port to listen on (default 8080)
+
+**Examples:**
+
+Start the UI on default port 8080:
+```bash
+pmp-cloud-inspector ui
+```
+
+Start the UI on custom port:
+```bash
+pmp-cloud-inspector ui -p 3000
+```
+
+Then open your browser at `http://localhost:8080` and upload your exported JSON or YAML files to view and explore your cloud resources interactively.
 
 ## Configuration
 
@@ -191,7 +223,18 @@ Available AWS resource types:
 - `aws:ec2:vpc`
 - `aws:ec2:subnet`
 - `aws:ec2:security-group`
+- `aws:ec2:instance`
 - `aws:ecr:repository`
+- `aws:eks:cluster`
+- `aws:elb:classic`
+- `aws:elb:application`
+- `aws:elb:network`
+- `aws:lambda:function`
+- `aws:apigateway:api`
+- `aws:cloudfront:distribution`
+- `aws:memorydb:cluster`
+- `aws:elasticache:cluster`
+- `aws:secretsmanager:secret`
 
 Available GitHub resource types:
 - `github:organization`
@@ -304,8 +347,19 @@ Required IAM permissions:
 - `ec2:DescribeVpcs`
 - `ec2:DescribeSubnets`
 - `ec2:DescribeSecurityGroups`
+- `ec2:DescribeInstances`
 - `ec2:DescribeRegions`
 - `ecr:DescribeRepositories`
+- `eks:ListClusters`
+- `eks:DescribeCluster`
+- `elasticloadbalancing:DescribeLoadBalancers`
+- `elasticloadbalancing:DescribeTags`
+- `lambda:ListFunctions`
+- `apigateway:GET`
+- `cloudfront:ListDistributions`
+- `memorydb:DescribeClusters`
+- `elasticache:DescribeCacheClusters`
+- `secretsmanager:ListSecrets`
 - `sts:GetCallerIdentity`
 
 ## GitHub Authentication
@@ -346,7 +400,7 @@ See LICENSE file for details.
 - [ ] Azure provider support
 - [ ] Okta provider support
 - [ ] JFrog provider support
-- [ ] More AWS resource types (EC2, RDS, S3, etc.)
+- [ ] Additional AWS resource types (RDS, S3, DynamoDB, SQS, SNS, etc.)
 - [ ] Advanced filtering and querying
 - [ ] Resource change detection
 - [ ] Cost estimation

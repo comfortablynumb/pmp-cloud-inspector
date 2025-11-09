@@ -16,7 +16,18 @@ const (
 	TypeAWSVPC           ResourceType = "aws:ec2:vpc"
 	TypeAWSSubnet        ResourceType = "aws:ec2:subnet"
 	TypeAWSSecurityGroup ResourceType = "aws:ec2:security-group"
+	TypeAWSEC2Instance   ResourceType = "aws:ec2:instance"
 	TypeAWSECR           ResourceType = "aws:ecr:repository"
+	TypeAWSEKSCluster    ResourceType = "aws:eks:cluster"
+	TypeAWSELB           ResourceType = "aws:elb:classic"
+	TypeAWSALB           ResourceType = "aws:elb:application"
+	TypeAWSNLB           ResourceType = "aws:elb:network"
+	TypeAWSLambda        ResourceType = "aws:lambda:function"
+	TypeAWSAPIGateway    ResourceType = "aws:apigateway:api"
+	TypeAWSCloudFront    ResourceType = "aws:cloudfront:distribution"
+	TypeAWSMemoryDB      ResourceType = "aws:memorydb:cluster"
+	TypeAWSElastiCache   ResourceType = "aws:elasticache:cluster"
+	TypeAWSSecret        ResourceType = "aws:secretsmanager:secret"
 
 	// GitHub Resource Types
 	TypeGitHubOrganization ResourceType = "github:organization"
@@ -76,12 +87,13 @@ type Collection struct {
 
 // CollectionMetadata provides information about the collection
 type CollectionMetadata struct {
-	Timestamp  time.Time            `json:"timestamp"`
-	TotalCount int                  `json:"total_count"`
-	ByType     map[ResourceType]int `json:"by_type"`
-	ByProvider map[string]int       `json:"by_provider"`
-	ByAccount  map[string]int       `json:"by_account,omitempty"`
-	ByRegion   map[string]int       `json:"by_region,omitempty"`
+	Timestamp       time.Time                       `json:"timestamp"`
+	TotalCount      int                             `json:"total_count"`
+	ByType          map[ResourceType]int            `json:"by_type"`
+	ByProvider      map[string]int                  `json:"by_provider"`
+	ByAccount       map[string]int                  `json:"by_account,omitempty"`
+	ByRegion        map[string]int                  `json:"by_region,omitempty"`
+	ByTypeAndRegion map[string]map[ResourceType]int `json:"by_type_and_region,omitempty"`
 }
 
 // NewCollection creates a new resource collection
@@ -90,11 +102,12 @@ func NewCollection() *Collection {
 		Resources: make([]*Resource, 0),
 		index:     make(map[string]*Resource),
 		Metadata: CollectionMetadata{
-			Timestamp:  time.Now(),
-			ByType:     make(map[ResourceType]int),
-			ByProvider: make(map[string]int),
-			ByAccount:  make(map[string]int),
-			ByRegion:   make(map[string]int),
+			Timestamp:       time.Now(),
+			ByType:          make(map[ResourceType]int),
+			ByProvider:      make(map[string]int),
+			ByAccount:       make(map[string]int),
+			ByRegion:        make(map[string]int),
+			ByTypeAndRegion: make(map[string]map[ResourceType]int),
 		},
 	}
 }
@@ -115,6 +128,12 @@ func (c *Collection) Add(resource *Resource) {
 
 	if resource.Region != "" {
 		c.Metadata.ByRegion[resource.Region]++
+
+		// Update by type and region
+		if c.Metadata.ByTypeAndRegion[resource.Region] == nil {
+			c.Metadata.ByTypeAndRegion[resource.Region] = make(map[ResourceType]int)
+		}
+		c.Metadata.ByTypeAndRegion[resource.Region][resource.Type]++
 	}
 }
 

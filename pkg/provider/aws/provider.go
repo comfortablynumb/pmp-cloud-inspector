@@ -98,7 +98,18 @@ func (p *Provider) GetSupportedResourceTypes() []resource.ResourceType {
 		resource.TypeAWSVPC,
 		resource.TypeAWSSubnet,
 		resource.TypeAWSSecurityGroup,
+		resource.TypeAWSEC2Instance,
 		resource.TypeAWSECR,
+		resource.TypeAWSEKSCluster,
+		resource.TypeAWSELB,
+		resource.TypeAWSALB,
+		resource.TypeAWSNLB,
+		resource.TypeAWSLambda,
+		resource.TypeAWSAPIGateway,
+		resource.TypeAWSCloudFront,
+		resource.TypeAWSMemoryDB,
+		resource.TypeAWSElastiCache,
+		resource.TypeAWSSecret,
 	}
 }
 
@@ -134,6 +145,13 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		p.collectAccounts(collection)
 	}
 
+	// Collect global resources (CloudFront)
+	if typeSet[resource.TypeAWSCloudFront] {
+		if err := p.collectCloudFrontDistributions(ctx, collection, p.awsConfig); err != nil {
+			return nil, fmt.Errorf("failed to collect CloudFront distributions: %w", err)
+		}
+	}
+
 	// Collect regional resources
 	for _, region := range p.regions {
 		regionalConfig := p.awsConfig.Copy()
@@ -157,9 +175,63 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 			}
 		}
 
+		if typeSet[resource.TypeAWSEC2Instance] {
+			if err := p.collectEC2Instances(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect EC2 instances in %s: %w", region, err)
+			}
+		}
+
 		if typeSet[resource.TypeAWSECR] {
 			if err := p.collectECRRepositories(ctx, collection, region, regionalConfig); err != nil {
 				return nil, fmt.Errorf("failed to collect ECR repositories in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSEKSCluster] {
+			if err := p.collectEKSClusters(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect EKS clusters in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSELB] {
+			if err := p.collectClassicLoadBalancers(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect ELBs in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSALB] || typeSet[resource.TypeAWSNLB] {
+			if err := p.collectLoadBalancersV2(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect ALBs/NLBs in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSLambda] {
+			if err := p.collectLambdaFunctions(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect Lambda functions in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSAPIGateway] {
+			if err := p.collectAPIGatewayAPIs(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect API Gateways in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSMemoryDB] {
+			if err := p.collectMemoryDBClusters(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect MemoryDB clusters in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSElastiCache] {
+			if err := p.collectElastiCacheClusters(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect ElastiCache clusters in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSSecret] {
+			if err := p.collectSecrets(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect secrets in %s: %w", region, err)
 			}
 		}
 	}
