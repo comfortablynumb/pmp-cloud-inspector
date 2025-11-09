@@ -1,0 +1,64 @@
+# PMP Cloud Inspector Configuration Example
+
+# Provider configuration
+providers:
+  # AWS Provider
+  - name: aws
+    # Specific accounts to inspect (empty = all accounts available with credentials)
+    accounts: []
+    # Specific regions to inspect (empty = default regions)
+    regions:
+      - us-east-1
+      - us-west-2
+      - eu-west-1
+    # Provider-specific options
+    options: {}
+
+  # Future providers can be added here
+  # - name: gcp
+  #   accounts: []
+  #   regions: []
+  #   options: {}
+  #
+  # - name: okta
+  #   accounts: []
+  #   options: {}
+
+# Resource configuration
+resources:
+  # Specific resource types to collect
+  # Available AWS types:
+  #   - aws:iam:user
+  #   - aws:iam:role
+  #   - aws:account
+  #   - aws:ec2:vpc
+  #   - aws:ec2:subnet
+  #   - aws:ec2:security-group
+  #   - aws:ecr:repository
+  types: []
+
+  # Collect all available resource types
+  include_all: true
+
+  # Track relationships between resources
+  relationships: true
+
+# Export configuration
+export:
+  # Output format: json, yaml, dot
+  format: json
+
+  # Output file path (optional, defaults to stdout)
+  output_file: ""
+
+  # Pretty print output
+  pretty: true
+
+  # Include raw cloud provider data in output
+  include_raw: false
+
+  # Export to multiple formats (optional)
+  # formats:
+  #   - json
+  #   - yaml
+  #   - dot
