@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PMP Cloud Inspector - Resource Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        .resource-card {
+            transition: all 0.2s;
+        }
+        .resource-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: flex;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .truncate-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">PMP Cloud Inspector</h1>
+                    <p class="text-gray-600 mt-1">Upload and explore your cloud resources</p>
+                </div>
+                <div class="text-right">
+                    <div id="stats" class="hidden">
+                        <div class="text-sm text-gray-500">Total Resources</div>
+                        <div class="text-2xl font-bold text-blue-600" id="total-count">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Upload Section -->
+        <div id="upload-section" class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <h3 class="mt-2 text-lg font-medium text-gray-900">Upload Resource Export</h3>
+                    <p class="mt-1 text-sm text-gray-500">JSON or YAML files from PMP Cloud Inspector</p>
+                    <div class="mt-6">
+                        <label for="file-upload" class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            Select File
+                            <input id="file-upload" name="file" type="file" class="sr-only" accept=".json,.yaml,.yml">
+                        </label>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">
+                        Supported formats: JSON, YAML
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="loading active justify-center items-center py-12">
+            <div class="text-center hidden" id="loading-content">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p class="mt-4 text-gray-600">Loading resources...</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="hidden">
+            <!-- Filters and Search -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                        <input type="text" id="search" placeholder="Search resources..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Provider</label>
+                        <select id="filter-provider" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Providers</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Resource Type</label>
+                        <select id="filter-type" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Types</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                            <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Total Resources</p>
+                            <p class="text-2xl font-bold text-gray-900" id="summary-total">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
+                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Providers</p>
+                            <p class="text-2xl font-bold text-gray-900" id="summary-providers">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-purple-100 rounded-md p-3">
+                            <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Resource Types</p>
+                            <p class="text-2xl font-bold text-gray-900" id="summary-types">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
+                            <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Regions</p>
+                            <p class="text-2xl font-bold text-gray-900" id="summary-regions">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resources List -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Resources</h2>
+                <div id="resources-list" class="space-y-4">
+                    <!-- Resources will be inserted here -->
+                </div>
+                <div id="no-results" class="hidden text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No resources found</h3>
+                    <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let allResources = [];
+        let filteredResources = [];
+
+        // File upload handler
+        $('#file-upload').on('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            $('#loading-content').removeClass('hidden');
+            $('#upload-section').hide();
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            $.ajax({
+                url: '/upload',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        allResources = response.resources || [];
+                        displayResults(response);
+                    } else {
+                        alert('Error: ' + response.error);
+                        resetUpload();
+                    }
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON ? xhr.responseJSON.error : 'Upload failed';
+                    alert('Error: ' + error);
+                    resetUpload();
+                },
+                complete: function() {
+                    $('#loading-content').addClass('hidden');
+                }
+            });
+        });
+
+        function resetUpload() {
+            $('#upload-section').show();
+            $('#results-section').addClass('hidden');
+            $('#file-upload').val('');
+        }
+
+        function displayResults(data) {
+            $('#results-section').removeClass('hidden');
+            updateSummary(data.metadata);
+            populateFilters();
+            filteredResources = [...allResources];
+            renderResources();
+        }
+
+        function updateSummary(metadata) {
+            $('#summary-total').text(metadata.total_count || 0);
+            $('#summary-providers').text(Object.keys(metadata.by_provider || {}).length);
+            $('#summary-types').text(Object.keys(metadata.by_type || {}).length);
+            $('#summary-regions').text(Object.keys(metadata.by_region || {}).length);
+        }
+
+        function populateFilters() {
+            // Populate provider filter
+            const providers = new Set();
+            allResources.forEach(r => providers.add(r.provider));
+            $('#filter-provider').html('<option value="">All Providers</option>');
+            Array.from(providers).sort().forEach(provider => {
+                $('#filter-provider').append(`<option value="${provider}">${provider}</option>`);
+            });
+
+            // Populate type filter
+            const types = new Set();
+            allResources.forEach(r => types.add(r.type));
+            $('#filter-type').html('<option value="">All Types</option>');
+            Array.from(types).sort().forEach(type => {
+                const displayType = type.split(':').pop();
+                $('#filter-type').append(`<option value="${type}">${displayType}</option>`);
+            });
+        }
+
+        function applyFilters() {
+            const search = $('#search').val().toLowerCase();
+            const provider = $('#filter-provider').val();
+            const type = $('#filter-type').val();
+
+            filteredResources = allResources.filter(resource => {
+                const matchesSearch = !search ||
+                    resource.name.toLowerCase().includes(search) ||
+                    resource.id.toLowerCase().includes(search) ||
+                    (resource.region && resource.region.toLowerCase().includes(search));
+
+                const matchesProvider = !provider || resource.provider === provider;
+                const matchesType = !type || resource.type === type;
+
+                return matchesSearch && matchesProvider && matchesType;
+            });
+
+            renderResources();
+        }
+
+        function renderResources() {
+            const container = $('#resources-list');
+            container.empty();
+
+            if (filteredResources.length === 0) {
+                $('#no-results').removeClass('hidden');
+                return;
+            }
+
+            $('#no-results').addClass('hidden');
+
+            filteredResources.forEach(resource => {
+                const card = createResourceCard(resource);
+                container.append(card);
+            });
+        }
+
+        function createResourceCard(resource) {
+            const providerColors = {
+                'aws': 'bg-orange-100 text-orange-800',
+                'github': 'bg-gray-800 text-white',
+                'gcp': 'bg-blue-100 text-blue-800',
+                'azure': 'bg-blue-100 text-blue-800'
+            };
+
+            const typeDisplay = resource.type.split(':').pop();
+            const providerColor = providerColors[resource.provider] || 'bg-gray-100 text-gray-800';
+
+            let propertiesHtml = '';
+            if (resource.properties) {
+                const limitedProps = Object.entries(resource.properties).slice(0, 5);
+                propertiesHtml = limitedProps.map(([key, value]) => {
+                    const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
+                    return `
+                        <div class="flex justify-between py-2 border-b border-gray-100">
+                            <span class="text-sm font-medium text-gray-600">${key}:</span>
+                            <span class="text-sm text-gray-900 truncate-text ml-2" style="max-width: 200px;" title="${displayValue}">${displayValue}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            return $(`
+                <div class="resource-card border border-gray-200 rounded-lg p-4 hover:border-blue-300">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="badge ${providerColor}">${resource.provider.toUpperCase()}</span>
+                                <span class="badge bg-gray-100 text-gray-700">${typeDisplay}</span>
+                                ${resource.region ? `<span class="badge bg-blue-100 text-blue-700">${resource.region}</span>` : ''}
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-1">${resource.name}</h3>
+                            <p class="text-sm text-gray-500 mb-2">ID: ${resource.id}</p>
+                            ${resource.arn ? `<p class="text-xs text-gray-400 mb-2 truncate-text" title="${resource.arn}">ARN: ${resource.arn}</p>` : ''}
+
+                            ${propertiesHtml ? `
+                                <div class="mt-3 bg-gray-50 rounded p-3">
+                                    <p class="text-xs font-semibold text-gray-700 mb-2">Properties</p>
+                                    ${propertiesHtml}
+                                </div>
+                            ` : ''}
+
+                            ${resource.relationships && resource.relationships.length > 0 ? `
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-500">
+                                        ${resource.relationships.length} relationship(s)
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        // Event listeners for filters
+        $('#search').on('input', applyFilters);
+        $('#filter-provider').on('change', applyFilters);
+        $('#filter-type').on('change', applyFilters);
+    </script>
+</body>
+</html>
