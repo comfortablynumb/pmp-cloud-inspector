@@ -131,9 +131,7 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 	}
 
 	if typeSet[resource.TypeAWSAccount] {
-		if err := p.collectAccounts(ctx, collection); err != nil {
-			return nil, fmt.Errorf("failed to collect accounts: %w", err)
-		}
+		p.collectAccounts(collection)
 	}
 
 	// Collect regional resources

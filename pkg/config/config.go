@@ -31,11 +31,11 @@ type ResourceConfig struct {
 
 // ExportConfig defines export settings
 type ExportConfig struct {
-	Format      string   `yaml:"format"`       // json, yaml, dot, etc.
-	OutputFile  string   `yaml:"output_file"`  // output file path
-	Pretty      bool     `yaml:"pretty"`       // pretty print output
-	IncludeRaw  bool     `yaml:"include_raw"`  // include raw cloud provider data
-	Formats     []string `yaml:"formats"`      // multiple output formats
+	Format     string   `yaml:"format"`      // json, yaml, dot, etc.
+	OutputFile string   `yaml:"output_file"` // output file path
+	Pretty     bool     `yaml:"pretty"`      // pretty print output
+	IncludeRaw bool     `yaml:"include_raw"` // include raw cloud provider data
+	Formats    []string `yaml:"formats"`     // multiple output formats
 }
 
 // LoadConfig loads configuration from a YAML file

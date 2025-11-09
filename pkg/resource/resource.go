@@ -25,26 +25,26 @@ const (
 
 // Resource represents a cloud resource
 type Resource struct {
-	ID           string                 `json:"id"`
-	Type         ResourceType           `json:"type"`
-	Name         string                 `json:"name"`
-	Provider     string                 `json:"provider"`
-	Account      string                 `json:"account,omitempty"`
-	Region       string                 `json:"region,omitempty"`
-	ARN          string                 `json:"arn,omitempty"` // AWS specific, but can be used for unique identifiers
-	Tags         map[string]string      `json:"tags,omitempty"`
-	Properties   map[string]interface{} `json:"properties"`
-	RawData      interface{}            `json:"raw_data,omitempty"`
-	Relationships []Relationship        `json:"relationships,omitempty"`
-	CreatedAt    *time.Time             `json:"created_at,omitempty"`
-	UpdatedAt    *time.Time             `json:"updated_at,omitempty"`
+	ID            string                 `json:"id"`
+	Type          ResourceType           `json:"type"`
+	Name          string                 `json:"name"`
+	Provider      string                 `json:"provider"`
+	Account       string                 `json:"account,omitempty"`
+	Region        string                 `json:"region,omitempty"`
+	ARN           string                 `json:"arn,omitempty"` // AWS specific, but can be used for unique identifiers
+	Tags          map[string]string      `json:"tags,omitempty"`
+	Properties    map[string]interface{} `json:"properties"`
+	RawData       interface{}            `json:"raw_data,omitempty"`
+	Relationships []Relationship         `json:"relationships,omitempty"`
+	CreatedAt     *time.Time             `json:"created_at,omitempty"`
+	UpdatedAt     *time.Time             `json:"updated_at,omitempty"`
 }
 
 // Relationship represents a connection between resources
 type Relationship struct {
-	Type       RelationType `json:"type"`
-	TargetID   string       `json:"target_id"`
-	TargetType ResourceType `json:"target_type"`
+	Type       RelationType           `json:"type"`
+	TargetID   string                 `json:"target_id"`
+	TargetType ResourceType           `json:"target_type"`
 	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 

@@ -50,7 +50,7 @@ func (p *Provider) collectIAMRoles(ctx context.Context, collection *resource.Col
 }
 
 // collectAccounts collects account information
-func (p *Provider) collectAccounts(_ context.Context, collection *resource.Collection) error {
+func (p *Provider) collectAccounts(collection *resource.Collection) {
 	for _, accountID := range p.accounts {
 		res := &resource.Resource{
 			ID:       accountID,
@@ -64,8 +64,6 @@ func (p *Provider) collectAccounts(_ context.Context, collection *resource.Colle
 		}
 		collection.Add(res)
 	}
-
-	return nil
 }
 
 // convertIAMUserToResource converts an IAM user to a Resource
