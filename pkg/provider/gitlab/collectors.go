@@ -1,3 +1,6 @@
+//go:build gitlab
+// +build gitlab
+
 package gitlab
 
 import (

@@ -1,3 +1,6 @@
+//go:build jfrog
+// +build jfrog
+
 package jfrog
 
 import (

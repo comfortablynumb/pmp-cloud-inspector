@@ -69,12 +69,17 @@ More providers (Azure, Okta, etc.) coming soon!
 git clone https://github.com/comfortablynumb/pmp-cloud-inspector.git
 cd pmp-cloud-inspector
 
-# Download dependencies (includes GitLab, JFrog, and GCP providers)
-go mod tidy
-
-# Enable all providers by uncommenting them in cmd/inspector/main.go
-# Then build
+# Basic build (AWS and GitHub providers only)
 go build -o pmp-cloud-inspector ./cmd/inspector
+
+# Build with additional providers (requires downloading dependencies)
+go mod tidy
+go build -tags "gitlab jfrog gcp" -o pmp-cloud-inspector ./cmd/inspector
+
+# Or build with specific providers only
+go build -tags "gitlab" -o pmp-cloud-inspector ./cmd/inspector  # GitLab only
+go build -tags "gcp" -o pmp-cloud-inspector ./cmd/inspector     # GCP only
+go build -tags "gitlab gcp" -o pmp-cloud-inspector ./cmd/inspector  # Multiple
 ```
 
 ### Prerequisites

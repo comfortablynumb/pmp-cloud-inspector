@@ -8,10 +8,7 @@ import (
 
 	_ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/aws"    // Register AWS provider
 	_ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/github" // Register GitHub provider
-	// Uncomment after running 'go mod tidy' to download dependencies:
-	// _ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/gcp"    // Register GCP provider
-	// _ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/gitlab" // Register GitLab provider
-	// _ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/jfrog"  // Register JFrog provider
+	// Additional providers registered via build tags in providers_*.go files
 )
 
 var rootCmd = &cobra.Command{
