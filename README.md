@@ -39,6 +39,42 @@ go build -o pmp-cloud-inspector ./cmd/inspector
 - Go 1.21 or higher
 - AWS credentials configured (for AWS provider)
 
+### Pre-built Binaries
+
+Download the latest pre-built binaries from the [Releases](https://github.com/comfortablynumb/pmp-cloud-inspector/releases) page.
+
+Available for:
+- Linux (amd64, arm64)
+- macOS (amd64, arm64)
+- Windows (amd64)
+
+## CI/CD
+
+The project includes comprehensive GitHub Actions workflows:
+
+- **PR Checks** (`.github/workflows/pr.yml`): Runs on pull requests to main
+  - Linting with golangci-lint
+  - Tests with race detector (`-race --count=1`)
+  - Build verification
+
+- **Main Branch** (`.github/workflows/main.yml`): Runs on merges to main
+  - Linting with golangci-lint
+  - Tests with race detector (`-race --count=1`)
+  - Build verification
+
+- **Release** (`.github/workflows/release.yml`): Triggers on semantic version tags (v*.*.*)
+  - Linting with golangci-lint
+  - Tests with race detector (`-race --count=1`)
+  - Multi-platform binary builds (Linux, macOS, Windows)
+  - Automatic GitHub release creation with binaries and checksums
+  - Changelog generation
+
+To create a release, simply push a tag with semantic versioning:
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
 ## Quick Start
 
 1. Create a configuration file (see `examples/config.yaml`):
