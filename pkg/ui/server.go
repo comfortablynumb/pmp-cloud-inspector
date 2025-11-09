@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -39,7 +40,16 @@ func (s *Server) Start() error {
 	http.HandleFunc("/api/stats", s.handleStats)
 
 	addr := fmt.Sprintf(":%d", s.port)
-	return http.ListenAndServe(addr, nil)
+
+	// #nosec G114 - This is a local development server for viewing cloud resources
+	server := &http.Server{
+		Addr:         addr,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	return server.ListenAndServe()
 }
 
 // handleIndex serves the main page
@@ -51,9 +61,9 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 // uploadResponse represents the JSON response for upload
 type uploadResponse struct {
-	Success   bool                    `json:"success"`
-	Error     string                  `json:"error,omitempty"`
-	Resources []*resource.Resource    `json:"resources,omitempty"`
+	Success   bool                        `json:"success"`
+	Error     string                      `json:"error,omitempty"`
+	Resources []*resource.Resource        `json:"resources,omitempty"`
 	Metadata  resource.CollectionMetadata `json:"metadata,omitempty"`
 }
 
@@ -75,7 +85,10 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		s.sendError(w, fmt.Sprintf("Failed to get file: %v", err))
 		return
 	}
-	defer file.Close()
+	defer func() {
+		//nolint:errcheck // Ignore error on close since we can't return it from defer
+		file.Close()
+	}()
 
 	// Read file content
 	content, err := io.ReadAll(file)
@@ -105,24 +118,29 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Send response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(uploadResponse{
+	if err := json.NewEncoder(w).Encode(uploadResponse{
 		Success:   true,
 		Resources: collection.Resources,
 		Metadata:  collection.Metadata,
-	})
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // handleStats returns statistics for the loaded data
 func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	// This is a placeholder - stats are calculated on the client side
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // sendError sends an error response
 func (s *Server) sendError(w http.ResponseWriter, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
+	//nolint:errcheck // Error already being sent to client via HTTP status
 	json.NewEncoder(w).Encode(uploadResponse{
 		Success: false,
 		Error:   message,
