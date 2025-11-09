@@ -51,8 +51,8 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	if err := cfg.Validate(); err != nil {
-		return fmt.Errorf("invalid config: %w", err)
+	if validateErr := cfg.Validate(); validateErr != nil {
+		return fmt.Errorf("invalid config: %w", validateErr)
 	}
 
 	fmt.Fprintf(os.Stderr, "Loaded configuration from %s\n", configFile)
@@ -65,14 +65,14 @@ func run(cmd *cobra.Command, args []string) error {
 
 		// Get provider factory
 		registry := provider.GetRegistry()
-		p, err := registry.Create(providerCfg.Name)
-		if err != nil {
-			return fmt.Errorf("failed to create provider %s: %w", providerCfg.Name, err)
+		p, createErr := registry.Create(providerCfg.Name)
+		if createErr != nil {
+			return fmt.Errorf("failed to create provider %s: %w", providerCfg.Name, createErr)
 		}
 
 		// Initialize provider
-		if err := p.Initialize(ctx, providerCfg); err != nil {
-			return fmt.Errorf("failed to initialize provider %s: %w", providerCfg.Name, err)
+		if initErr := p.Initialize(ctx, providerCfg); initErr != nil {
+			return fmt.Errorf("failed to initialize provider %s: %w", providerCfg.Name, initErr)
 		}
 
 		// Collect resources
@@ -86,9 +86,9 @@ func run(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		collection, err := p.CollectResources(ctx, resourceTypes)
-		if err != nil {
-			return fmt.Errorf("failed to collect resources from %s: %w", providerCfg.Name, err)
+		collection, collectErr := p.CollectResources(ctx, resourceTypes)
+		if collectErr != nil {
+			return fmt.Errorf("failed to collect resources from %s: %w", providerCfg.Name, collectErr)
 		}
 
 		fmt.Fprintf(os.Stderr, "Collected %d resources from %s\n", len(collection.Resources), providerCfg.Name)
@@ -96,8 +96,8 @@ func run(cmd *cobra.Command, args []string) error {
 		// Discover relationships if enabled
 		if cfg.Resources.Relationships {
 			fmt.Fprintf(os.Stderr, "Discovering relationships...\n")
-			if err := p.DiscoverRelationships(ctx, collection); err != nil {
-				return fmt.Errorf("failed to discover relationships: %w", err)
+			if relErr := p.DiscoverRelationships(ctx, collection); relErr != nil {
+				return fmt.Errorf("failed to discover relationships: %w", relErr)
 			}
 		}
 
@@ -127,11 +127,16 @@ func run(cmd *cobra.Command, args []string) error {
 	// Determine output writer
 	var writer *os.File
 	if outputFile != "" {
+		// #nosec G304 - outputFile is provided by user as CLI argument, this is expected behavior
 		writer, err = os.Create(outputFile)
 		if err != nil {
 			return fmt.Errorf("failed to create output file: %w", err)
 		}
-		defer writer.Close()
+		defer func() {
+			if closeErr := writer.Close(); closeErr != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to close output file: %v\n", closeErr)
+			}
+		}()
 		fmt.Fprintf(os.Stderr, "Writing output to %s in %s format...\n", outputFile, outputFormat)
 	} else {
 		writer = os.Stdout

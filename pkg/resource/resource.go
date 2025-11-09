@@ -10,17 +10,17 @@ type ResourceType string
 
 const (
 	// AWS Resource Types
-	TypeAWSIAMUser          ResourceType = "aws:iam:user"
-	TypeAWSIAMRole          ResourceType = "aws:iam:role"
-	TypeAWSAccount          ResourceType = "aws:account"
-	TypeAWSVPC              ResourceType = "aws:ec2:vpc"
-	TypeAWSSubnet           ResourceType = "aws:ec2:subnet"
-	TypeAWSSecurityGroup    ResourceType = "aws:ec2:security-group"
-	TypeAWSECR              ResourceType = "aws:ecr:repository"
+	TypeAWSIAMUser       ResourceType = "aws:iam:user"
+	TypeAWSIAMRole       ResourceType = "aws:iam:role"
+	TypeAWSAccount       ResourceType = "aws:account"
+	TypeAWSVPC           ResourceType = "aws:ec2:vpc"
+	TypeAWSSubnet        ResourceType = "aws:ec2:subnet"
+	TypeAWSSecurityGroup ResourceType = "aws:ec2:security-group"
+	TypeAWSECR           ResourceType = "aws:ecr:repository"
 
 	// Future providers can add their types here
-	// TypeGCPProject       ResourceType = "gcp:project"
-	// TypeOktaUser         ResourceType = "okta:user"
+	// TypeGCPProject ResourceType = "gcp:project"
+	// TypeOktaUser   ResourceType = "okta:user"
 )
 
 // Resource represents a cloud resource

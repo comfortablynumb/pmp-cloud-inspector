@@ -174,6 +174,8 @@ func (p *Provider) DiscoverRelationships(ctx context.Context, collection *resour
 	// Build relationships based on AWS resource structure
 	for _, res := range collection.Resources {
 		switch res.Type {
+		case resource.TypeAWSVPC:
+			p.discoverVPCRelationships(res, collection)
 		case resource.TypeAWSSubnet:
 			p.discoverSubnetRelationships(res, collection)
 		case resource.TypeAWSSecurityGroup:

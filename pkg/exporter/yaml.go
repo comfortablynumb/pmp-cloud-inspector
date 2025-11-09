@@ -24,7 +24,12 @@ func (e *YAMLExporter) Export(collection *resource.Collection, writer io.Writer,
 	}
 
 	encoder := yaml.NewEncoder(writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override return value
+			// since we're in a defer
+		}
+	}()
 
 	if options.Pretty {
 		encoder.SetIndent(2)

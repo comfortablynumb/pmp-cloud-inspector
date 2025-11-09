@@ -24,9 +24,9 @@ type ProviderConfig struct {
 
 // ResourceConfig defines which resources to inspect
 type ResourceConfig struct {
-	Types         []string `yaml:"types"`          // specific resource types (empty = all)
-	IncludeAll    bool     `yaml:"include_all"`    // include all resource types
-	Relationships bool     `yaml:"relationships"`  // track relationships between resources
+	Types         []string `yaml:"types"`         // specific resource types (empty = all)
+	IncludeAll    bool     `yaml:"include_all"`   // include all resource types
+	Relationships bool     `yaml:"relationships"` // track relationships between resources
 }
 
 // ExportConfig defines export settings
@@ -40,6 +40,7 @@ type ExportConfig struct {
 
 // LoadConfig loads configuration from a YAML file
 func LoadConfig(path string) (*Config, error) {
+	// #nosec G304 - path is provided by user as CLI argument, this is expected behavior
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
@@ -51,7 +52,7 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	// Set defaults
-	if config.Resources.Types == nil || len(config.Resources.Types) == 0 {
+	if len(config.Resources.Types) == 0 {
 		config.Resources.IncludeAll = true
 	}
 

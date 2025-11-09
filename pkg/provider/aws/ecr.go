@@ -41,7 +41,7 @@ func (p *Provider) convertECRRepositoryToResource(repo *ecrTypes.Repository, reg
 	}
 
 	properties := map[string]interface{}{
-		"registry_id":  safeString(repo.RegistryId),
+		"registry_id":    safeString(repo.RegistryId),
 		"repository_uri": safeString(repo.RepositoryUri),
 	}
 

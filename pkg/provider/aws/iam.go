@@ -50,7 +50,7 @@ func (p *Provider) collectIAMRoles(ctx context.Context, collection *resource.Col
 }
 
 // collectAccounts collects account information
-func (p *Provider) collectAccounts(ctx context.Context, collection *resource.Collection) error {
+func (p *Provider) collectAccounts(_ context.Context, collection *resource.Collection) error {
 	for _, accountID := range p.accounts {
 		res := &resource.Resource{
 			ID:       accountID,
