@@ -39,7 +39,27 @@
 - Teams
 - Users
 
-More providers (GCP, Okta, JFrog, etc.) coming soon!
+### GitLab
+- Projects
+- Groups
+- Users
+
+### JFrog Artifactory
+- Repositories
+- Users
+- Groups
+- Permissions
+
+### GCP (Google Cloud Platform)
+- Projects
+- Compute Instances
+- VPC Networks
+- Subnetworks
+- Storage Buckets
+- Cloud Functions
+- Cloud Run Services
+
+More providers (Azure, Okta, etc.) coming soon!
 
 ## Installation
 
@@ -48,7 +68,18 @@ More providers (GCP, Okta, JFrog, etc.) coming soon!
 ```bash
 git clone https://github.com/comfortablynumb/pmp-cloud-inspector.git
 cd pmp-cloud-inspector
+
+# Basic build (AWS and GitHub providers only)
 go build -o pmp-cloud-inspector ./cmd/inspector
+
+# Build with additional providers (requires downloading dependencies)
+go mod tidy
+go build -tags "gitlab jfrog gcp" -o pmp-cloud-inspector ./cmd/inspector
+
+# Or build with specific providers only
+go build -tags "gitlab" -o pmp-cloud-inspector ./cmd/inspector  # GitLab only
+go build -tags "gcp" -o pmp-cloud-inspector ./cmd/inspector     # GCP only
+go build -tags "gitlab gcp" -o pmp-cloud-inspector ./cmd/inspector  # Multiple
 ```
 
 ### Prerequisites
@@ -385,6 +416,75 @@ providers:
     options:
       token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
+
+## GitLab Authentication
+
+The GitLab provider requires a personal access token for authentication.
+
+To create a personal access token:
+1. Go to GitLab Settings → Access Tokens
+2. Create a new token with the following scopes:
+   - `read_api` - Read API access
+   - `read_repository` - Read repository data
+
+Configure the token in your config file:
+
+```yaml
+providers:
+  - name: gitlab
+    accounts:
+      - my-group  # Optional: specific groups to inspect
+    options:
+      token: "glpat-xxxxxxxxxxxxxxxxxxxx"
+      base_url: "https://gitlab.com"  # Optional: for self-hosted GitLab
+```
+
+## JFrog Artifactory Authentication
+
+The JFrog provider requires either an API key or username/password for authentication.
+
+Configure in your config file:
+
+```yaml
+providers:
+  - name: jfrog
+    options:
+      base_url: "https://mycompany.jfrog.io"
+      api_key: "AKCxxxxxxxxxxxxxxxxxxxx"
+      # OR use username/password:
+      # username: "admin"
+      # password: "password"
+```
+
+## GCP Authentication
+
+The GCP provider uses Application Default Credentials or a service account key file.
+
+To set up authentication:
+1. Create a service account in GCP Console
+2. Grant necessary IAM roles (Viewer or custom roles)
+3. Download the JSON key file
+
+Configure in your config file:
+
+```yaml
+providers:
+  - name: gcp
+    regions:
+      - us-central1
+      - us-east1
+    options:
+      project_id: "my-gcp-project"
+      credentials_file: "/path/to/service-account-key.json"  # Optional: uses ADC if not provided
+```
+
+Required GCP IAM permissions:
+- `compute.instances.list`
+- `compute.networks.list`
+- `compute.subnetworks.list`
+- `storage.buckets.list`
+- `cloudfunctions.functions.list`
+- `run.services.list`
 
 ## Contributing
 

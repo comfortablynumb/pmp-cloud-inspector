@@ -1,0 +1,177 @@
+# GoReleaser configuration
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    # Ensure go.mod is tidy
+    - go mod tidy
+
+builds:
+  # Build without optional providers (default)
+  - id: default
+    main: ./cmd/inspector
+    binary: pmp-cloud-inspector
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # Ignore specific combinations
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+
+  # Build with all providers enabled
+  - id: full
+    main: ./cmd/inspector
+    binary: pmp-cloud-inspector-full
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -tags=gitlab,jfrog,gcp
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+
+archives:
+  - id: default-archive
+    builds:
+      - default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+      - examples/*
+
+  - id: full-archive
+    builds:
+      - full
+    name_template: >-
+      {{ .ProjectName }}-full_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+      - examples/*
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'merge conflict'
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+  groups:
+    - title: 'New Features'
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: 'Performance Improvements'
+      regexp: "^.*perf[(\\w)]*:+.*$"
+      order: 2
+    - title: 'Documentation Updates'
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 3
+    - title: 'Other Changes'
+      order: 999
+
+release:
+  github:
+    owner: comfortablynumb
+    name: pmp-cloud-inspector
+  draft: false
+  prerelease: auto
+  mode: replace
+  name_template: "Release {{.Version}}"
+  header: |
+    ## PMP Cloud Inspector {{.Version}}
+
+    Cloud resource inspector and exporter for AWS, GitHub, GitLab, JFrog, and GCP.
+
+    ### Installation
+
+    Download the appropriate binary for your platform below.
+
+    - **Default builds**: AWS and GitHub providers only (no external dependencies)
+    - **Full builds**: Includes GitLab, JFrog, and GCP providers (requires dependencies)
+
+    ### Verifying Downloads
+
+    All binaries are checksummed for integrity verification:
+    ```bash
+    sha256sum -c checksums.txt
+    ```
+  footer: |
+    ---
+
+    **Full Changelog**: https://github.com/comfortablynumb/pmp-cloud-inspector/compare/{{.PreviousTag}}...{{.Tag}}
+
+# Optional: Create Docker images
+# dockers:
+#   - image_templates:
+#       - "ghcr.io/comfortablynumb/pmp-cloud-inspector:{{ .Tag }}"
+#       - "ghcr.io/comfortablynumb/pmp-cloud-inspector:latest"
+#     dockerfile: Dockerfile
+#     use: buildx
+#     build_flag_templates:
+#       - "--platform=linux/amd64"
+#       - "--label=org.opencontainers.image.created={{.Date}}"
+#       - "--label=org.opencontainers.image.title={{.ProjectName}}"
+#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+#       - "--label=org.opencontainers.image.version={{.Version}}"

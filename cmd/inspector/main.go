@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/aws"    // Register AWS provider
 	_ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/github" // Register GitHub provider
+	// Additional providers registered via build tags in providers_*.go files
 )
 
 var rootCmd = &cobra.Command{
