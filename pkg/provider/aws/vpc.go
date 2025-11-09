@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -13,6 +14,7 @@ import (
 
 // collectVPCs collects all VPCs in a region
 func (p *Provider) collectVPCs(ctx context.Context, collection *resource.Collection, region string, cfg aws.Config) error {
+	fmt.Fprintf(os.Stderr, "  Collecting VPCs in %s...\n", region)
 	client := ec2.NewFromConfig(cfg)
 
 	result, err := client.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{})
@@ -20,16 +22,21 @@ func (p *Provider) collectVPCs(ctx context.Context, collection *resource.Collect
 		return fmt.Errorf("failed to describe VPCs: %w", err)
 	}
 
+	count := 0
 	for _, vpc := range result.Vpcs {
 		res := p.convertVPCToResource(&vpc, region)
 		collection.Add(res)
+		count++
+		fmt.Fprintf(os.Stderr, "    Found VPC: %s (%s)\n", safeString(vpc.VpcId), safeString(vpc.CidrBlock))
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d VPCs in %s\n", count, region)
 	return nil
 }
 
 // collectSubnets collects all subnets in a region
 func (p *Provider) collectSubnets(ctx context.Context, collection *resource.Collection, region string, cfg aws.Config) error {
+	fmt.Fprintf(os.Stderr, "  Collecting subnets in %s...\n", region)
 	client := ec2.NewFromConfig(cfg)
 
 	result, err := client.DescribeSubnets(ctx, &ec2.DescribeSubnetsInput{})
@@ -37,16 +44,21 @@ func (p *Provider) collectSubnets(ctx context.Context, collection *resource.Coll
 		return fmt.Errorf("failed to describe subnets: %w", err)
 	}
 
+	count := 0
 	for _, subnet := range result.Subnets {
 		res := p.convertSubnetToResource(&subnet, region)
 		collection.Add(res)
+		count++
+		fmt.Fprintf(os.Stderr, "    Found subnet: %s (%s)\n", safeString(subnet.SubnetId), safeString(subnet.CidrBlock))
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d subnets in %s\n", count, region)
 	return nil
 }
 
 // collectSecurityGroups collects all security groups in a region
 func (p *Provider) collectSecurityGroups(ctx context.Context, collection *resource.Collection, region string, cfg aws.Config) error {
+	fmt.Fprintf(os.Stderr, "  Collecting security groups in %s...\n", region)
 	client := ec2.NewFromConfig(cfg)
 
 	result, err := client.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{})
@@ -54,11 +66,15 @@ func (p *Provider) collectSecurityGroups(ctx context.Context, collection *resour
 		return fmt.Errorf("failed to describe security groups: %w", err)
 	}
 
+	count := 0
 	for _, sg := range result.SecurityGroups {
 		res := p.convertSecurityGroupToResource(&sg, region)
 		collection.Add(res)
+		count++
+		fmt.Fprintf(os.Stderr, "    Found security group: %s (%s)\n", safeString(sg.GroupId), safeString(sg.GroupName))
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d security groups in %s\n", count, region)
 	return nil
 }
 

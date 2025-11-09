@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/go-github/v57/github"
@@ -12,6 +13,8 @@ import (
 
 // collectOrganizations collects all organizations
 func (p *Provider) collectOrganizations(ctx context.Context, collection *resource.Collection) error {
+	fmt.Fprintf(os.Stderr, "  Collecting GitHub organizations...\n")
+	count := 0
 	for _, orgName := range p.organizations {
 		org, _, err := p.client.Organizations.Get(ctx, orgName)
 		if err != nil {
@@ -20,17 +23,22 @@ func (p *Provider) collectOrganizations(ctx context.Context, collection *resourc
 
 		res := p.convertOrganizationToResource(org)
 		collection.Add(res)
+		count++
+		fmt.Fprintf(os.Stderr, "    Found organization: %s\n", safeString(org.Login))
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d organizations\n", count)
 	return nil
 }
 
 // collectRepositories collects all repositories for an organization
 func (p *Provider) collectRepositories(ctx context.Context, collection *resource.Collection, org string) error {
+	fmt.Fprintf(os.Stderr, "  Collecting repositories for %s...\n", org)
 	opts := &github.RepositoryListByOrgOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
+	count := 0
 	for {
 		repos, resp, err := p.client.Repositories.ListByOrg(ctx, org, opts)
 		if err != nil {
@@ -40,6 +48,8 @@ func (p *Provider) collectRepositories(ctx context.Context, collection *resource
 		for _, repo := range repos {
 			res := p.convertRepositoryToResource(repo, org)
 			collection.Add(res)
+			count++
+			fmt.Fprintf(os.Stderr, "    Found repository: %s/%s\n", org, safeString(repo.Name))
 		}
 
 		if resp.NextPage == 0 {
@@ -48,13 +58,16 @@ func (p *Provider) collectRepositories(ctx context.Context, collection *resource
 		opts.Page = resp.NextPage
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d repositories for %s\n", count, org)
 	return nil
 }
 
 // collectTeams collects all teams for an organization
 func (p *Provider) collectTeams(ctx context.Context, collection *resource.Collection, org string) error {
+	fmt.Fprintf(os.Stderr, "  Collecting teams for %s...\n", org)
 	opts := &github.ListOptions{PerPage: 100}
 
+	count := 0
 	for {
 		teams, resp, err := p.client.Teams.ListTeams(ctx, org, opts)
 		if err != nil {
@@ -64,6 +77,8 @@ func (p *Provider) collectTeams(ctx context.Context, collection *resource.Collec
 		for _, team := range teams {
 			res := p.convertTeamToResource(team, org)
 			collection.Add(res)
+			count++
+			fmt.Fprintf(os.Stderr, "    Found team: %s\n", safeString(team.Name))
 		}
 
 		if resp.NextPage == 0 {
@@ -72,15 +87,18 @@ func (p *Provider) collectTeams(ctx context.Context, collection *resource.Collec
 		opts.Page = resp.NextPage
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d teams for %s\n", count, org)
 	return nil
 }
 
 // collectUsers collects all members for an organization
 func (p *Provider) collectUsers(ctx context.Context, collection *resource.Collection, org string) error {
+	fmt.Fprintf(os.Stderr, "  Collecting users for %s...\n", org)
 	opts := &github.ListMembersOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
+	count := 0
 	for {
 		users, resp, err := p.client.Organizations.ListMembers(ctx, org, opts)
 		if err != nil {
@@ -90,6 +108,8 @@ func (p *Provider) collectUsers(ctx context.Context, collection *resource.Collec
 		for _, user := range users {
 			res := p.convertUserToResource(user, org)
 			collection.Add(res)
+			count++
+			fmt.Fprintf(os.Stderr, "    Found user: %s\n", safeString(user.Login))
 		}
 
 		if resp.NextPage == 0 {
@@ -98,6 +118,7 @@ func (p *Provider) collectUsers(ctx context.Context, collection *resource.Collec
 		opts.Page = resp.NextPage
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d users for %s\n", count, org)
 	return nil
 }
 
