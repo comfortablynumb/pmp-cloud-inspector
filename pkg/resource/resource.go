@@ -18,6 +18,12 @@ const (
 	TypeAWSSecurityGroup ResourceType = "aws:ec2:security-group"
 	TypeAWSECR           ResourceType = "aws:ecr:repository"
 
+	// GitHub Resource Types
+	TypeGitHubOrganization ResourceType = "github:organization"
+	TypeGitHubRepository   ResourceType = "github:repository"
+	TypeGitHubTeam         ResourceType = "github:team"
+	TypeGitHubUser         ResourceType = "github:user"
+
 	// Future providers can add their types here
 	// TypeGCPProject ResourceType = "gcp:project"
 	// TypeOktaUser   ResourceType = "okta:user"

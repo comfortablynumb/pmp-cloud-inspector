@@ -10,7 +10,8 @@ import (
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/config"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/exporter"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider"
-	_ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/aws" // Register AWS provider
+	_ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/aws"    // Register AWS provider
+	_ "github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider/github" // Register GitHub provider
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/resource"
 )
 

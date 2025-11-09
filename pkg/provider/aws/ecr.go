@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -14,10 +15,12 @@ import (
 
 // collectECRRepositories collects all ECR repositories in a region
 func (p *Provider) collectECRRepositories(ctx context.Context, collection *resource.Collection, region string, cfg aws.Config) error {
+	fmt.Fprintf(os.Stderr, "  Collecting ECR repositories in %s...\n", region)
 	client := ecr.NewFromConfig(cfg)
 
 	paginator := ecr.NewDescribeRepositoriesPaginator(client, &ecr.DescribeRepositoriesInput{})
 
+	count := 0
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -27,9 +30,12 @@ func (p *Provider) collectECRRepositories(ctx context.Context, collection *resou
 		for _, repo := range output.Repositories {
 			res := p.convertECRRepositoryToResource(&repo, region)
 			collection.Add(res)
+			count++
+			fmt.Fprintf(os.Stderr, "    Found ECR repository: %s\n", safeString(repo.RepositoryName))
 		}
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d ECR repositories in %s\n", count, region)
 	return nil
 }
 

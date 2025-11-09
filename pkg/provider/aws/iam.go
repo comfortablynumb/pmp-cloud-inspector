@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -13,8 +14,10 @@ import (
 
 // collectIAMUsers collects all IAM users
 func (p *Provider) collectIAMUsers(ctx context.Context, collection *resource.Collection) error {
+	fmt.Fprintf(os.Stderr, "  Collecting IAM users...\n")
 	paginator := iam.NewListUsersPaginator(p.iamClient, &iam.ListUsersInput{})
 
+	count := 0
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -24,16 +27,21 @@ func (p *Provider) collectIAMUsers(ctx context.Context, collection *resource.Col
 		for _, user := range output.Users {
 			res := p.convertIAMUserToResource(&user)
 			collection.Add(res)
+			count++
+			fmt.Fprintf(os.Stderr, "    Found IAM user: %s\n", safeString(user.UserName))
 		}
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d IAM users\n", count)
 	return nil
 }
 
 // collectIAMRoles collects all IAM roles
 func (p *Provider) collectIAMRoles(ctx context.Context, collection *resource.Collection) error {
+	fmt.Fprintf(os.Stderr, "  Collecting IAM roles...\n")
 	paginator := iam.NewListRolesPaginator(p.iamClient, &iam.ListRolesInput{})
 
+	count := 0
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -43,14 +51,18 @@ func (p *Provider) collectIAMRoles(ctx context.Context, collection *resource.Col
 		for _, role := range output.Roles {
 			res := p.convertIAMRoleToResource(&role)
 			collection.Add(res)
+			count++
+			fmt.Fprintf(os.Stderr, "    Found IAM role: %s\n", safeString(role.RoleName))
 		}
 	}
 
+	fmt.Fprintf(os.Stderr, "  Collected %d IAM roles\n", count)
 	return nil
 }
 
 // collectAccounts collects account information
 func (p *Provider) collectAccounts(collection *resource.Collection) {
+	fmt.Fprintf(os.Stderr, "  Collecting AWS accounts...\n")
 	for _, accountID := range p.accounts {
 		res := &resource.Resource{
 			ID:       accountID,
@@ -63,7 +75,9 @@ func (p *Provider) collectAccounts(collection *resource.Collection) {
 			},
 		}
 		collection.Add(res)
+		fmt.Fprintf(os.Stderr, "    Found AWS account: %s\n", accountID)
 	}
+	fmt.Fprintf(os.Stderr, "  Collected %d AWS accounts\n", len(p.accounts))
 }
 
 // convertIAMUserToResource converts an IAM user to a Resource
