@@ -63,19 +63,19 @@ const (
 
 // Collection holds all discovered resources
 type Collection struct {
-	Resources   []*Resource          `json:"resources"`
-	Metadata    CollectionMetadata   `json:"metadata"`
-	index       map[string]*Resource // internal index for quick lookups
+	Resources []*Resource          `json:"resources"`
+	Metadata  CollectionMetadata   `json:"metadata"`
+	index     map[string]*Resource // internal index for quick lookups
 }
 
 // CollectionMetadata provides information about the collection
 type CollectionMetadata struct {
-	Timestamp   time.Time         `json:"timestamp"`
-	TotalCount  int               `json:"total_count"`
-	ByType      map[ResourceType]int `json:"by_type"`
-	ByProvider  map[string]int    `json:"by_provider"`
-	ByAccount   map[string]int    `json:"by_account,omitempty"`
-	ByRegion    map[string]int    `json:"by_region,omitempty"`
+	Timestamp  time.Time            `json:"timestamp"`
+	TotalCount int                  `json:"total_count"`
+	ByType     map[ResourceType]int `json:"by_type"`
+	ByProvider map[string]int       `json:"by_provider"`
+	ByAccount  map[string]int       `json:"by_account,omitempty"`
+	ByRegion   map[string]int       `json:"by_region,omitempty"`
 }
 
 // NewCollection creates a new resource collection
