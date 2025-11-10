@@ -3,6 +3,7 @@
 
 # Go binaries
 pmp-cloud-inspector
+bin/
 *.exe
 *.exe~
 *.dll
