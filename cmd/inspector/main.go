@@ -24,6 +24,7 @@ resources and exports them in the desired format.`,
 
 func init() {
 	rootCmd.AddCommand(inspectCmd)
+	rootCmd.AddCommand(compareCmd)
 	rootCmd.AddCommand(uiCmd)
 }
 
