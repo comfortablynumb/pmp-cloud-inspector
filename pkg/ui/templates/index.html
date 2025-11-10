@@ -195,8 +195,8 @@
         </div>
 
         <!-- Loading -->
-        <div id="loading" class="loading active justify-center items-center py-12">
-            <div class="text-center hidden" id="loading-content">
+        <div id="loading" class="loading justify-center items-center">
+            <div class="text-center py-12">
                 <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 <p class="mt-4 text-gray-600">Loading resources...</p>
             </div>
@@ -282,11 +282,21 @@
 
             <!-- Filters and Search -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Search (Full-Text)</label>
                         <input type="text" id="search" placeholder="Search across names, IDs, types, properties..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
                         <p class="mt-1 text-xs text-gray-500">Searches all resource attributes and properties</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Group By</label>
+                        <select id="group-by" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">None</option>
+                            <option value="provider">Provider</option>
+                            <option value="type">Type</option>
+                            <option value="region">Region</option>
+                            <option value="tag">Tag</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Provider</label>
@@ -404,6 +414,60 @@
                 </div>
             </div>
         </div>
+
+        <!-- Resource Details Modal -->
+        <div id="resource-details-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-900" id="modal-resource-name">Resource Details</h3>
+                    <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">ID</p>
+                        <p class="text-sm text-gray-900 break-all" id="modal-resource-id"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Type</p>
+                        <p class="text-sm text-gray-900" id="modal-resource-type"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Provider</p>
+                        <p class="text-sm text-gray-900" id="modal-resource-provider"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Region</p>
+                        <p class="text-sm text-gray-900" id="modal-resource-region"></p>
+                    </div>
+                    <div class="md:col-span-2" id="modal-resource-arn-container">
+                        <p class="text-sm font-medium text-gray-500">ARN</p>
+                        <p class="text-sm text-gray-900 break-all" id="modal-resource-arn"></p>
+                    </div>
+                </div>
+
+                <div class="mb-6" id="modal-resource-tags-container">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-3">Tags</h4>
+                    <div id="modal-resource-tags" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+                </div>
+
+                <div class="mb-6" id="modal-resource-properties-container">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-3">Properties</h4>
+                    <div class="bg-gray-50 rounded p-4 max-h-96 overflow-y-auto">
+                        <pre id="modal-resource-properties" class="text-sm text-gray-900 whitespace-pre-wrap"></pre>
+                    </div>
+                </div>
+
+                <div id="modal-resource-relationships-container">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-3">Relationships</h4>
+                    <div id="modal-resource-relationships" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -418,7 +482,7 @@
             const file = this.files[0];
             if (!file) return;
 
-            $('#loading-content').removeClass('hidden');
+            $('#loading').addClass('active');
             $('#upload-section').hide();
 
             const formData = new FormData();
@@ -445,7 +509,7 @@
                     resetUpload();
                 },
                 complete: function() {
-                    $('#loading-content').addClass('hidden');
+                    $('#loading').removeClass('active');
                 }
             });
         });
@@ -551,10 +615,75 @@
 
             $('#no-results').addClass('hidden');
 
-            filteredResources.forEach(resource => {
-                const card = createResourceCard(resource);
-                container.append(card);
+            const groupBy = $('#group-by').val();
+
+            if (!groupBy) {
+                // No grouping - render flat list
+                filteredResources.forEach(resource => {
+                    const card = createResourceCard(resource);
+                    container.append(card);
+                });
+            } else {
+                // Group resources
+                const grouped = groupResources(filteredResources, groupBy);
+                Object.keys(grouped).sort().forEach(groupKey => {
+                    const groupHeader = $(`
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+                                </svg>
+                                ${groupKey} <span class="ml-2 text-sm text-gray-500">(${grouped[groupKey].length})</span>
+                            </h3>
+                            <div class="space-y-4 pl-6" id="group-${groupKey.replace(/[^a-zA-Z0-9]/g, '_')}"></div>
+                        </div>
+                    `);
+                    container.append(groupHeader);
+
+                    const groupContainer = container.find(`#group-${groupKey.replace(/[^a-zA-Z0-9]/g, '_')}`);
+                    grouped[groupKey].forEach(resource => {
+                        const card = createResourceCard(resource);
+                        groupContainer.append(card);
+                    });
+                });
+            }
+        }
+
+        function groupResources(resources, groupBy) {
+            const grouped = {};
+
+            resources.forEach(resource => {
+                let key;
+                switch (groupBy) {
+                    case 'provider':
+                        key = resource.provider.toUpperCase();
+                        break;
+                    case 'type':
+                        key = resource.type.split(':').pop();
+                        break;
+                    case 'region':
+                        key = resource.region || 'No Region';
+                        break;
+                    case 'tag':
+                        // Group by first tag key
+                        if (resource.tags && Object.keys(resource.tags).length > 0) {
+                            const firstTag = Object.keys(resource.tags)[0];
+                            key = `${firstTag}=${resource.tags[firstTag]}`;
+                        } else {
+                            key = 'No Tags';
+                        }
+                        break;
+                    default:
+                        key = 'Other';
+                }
+
+                if (!grouped[key]) {
+                    grouped[key] = [];
+                }
+                grouped[key].push(resource);
             });
+
+            return grouped;
         }
 
         function createResourceCard(resource) {
@@ -582,8 +711,8 @@
                 }).join('');
             }
 
-            return $(`
-                <div class="resource-card border border-gray-200 rounded-lg p-4 hover:border-blue-300">
+            const card = $(`
+                <div class="resource-card border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer">
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
                             <div class="flex items-center space-x-2 mb-2">
@@ -613,12 +742,95 @@
                     </div>
                 </div>
             `);
+
+            // Add click handler to show resource details
+            card.on('click', function() {
+                showResourceDetails(resource);
+            });
+
+            return card;
         }
+
+        // Show resource details in modal
+        function showResourceDetails(resource) {
+            // Set basic info
+            $('#modal-resource-name').text(resource.name);
+            $('#modal-resource-id').text(resource.id);
+            $('#modal-resource-type').text(resource.type);
+            $('#modal-resource-provider').text(resource.provider.toUpperCase());
+            $('#modal-resource-region').text(resource.region || 'N/A');
+
+            // Set ARN if available
+            if (resource.arn) {
+                $('#modal-resource-arn').text(resource.arn);
+                $('#modal-resource-arn-container').show();
+            } else {
+                $('#modal-resource-arn-container').hide();
+            }
+
+            // Set tags
+            const tagsContainer = $('#modal-resource-tags');
+            tagsContainer.empty();
+            if (resource.tags && Object.keys(resource.tags).length > 0) {
+                Object.entries(resource.tags).forEach(([key, value]) => {
+                    tagsContainer.append(`
+                        <div class="bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm">
+                            <span class="font-semibold">${key}:</span> ${value}
+                        </div>
+                    `);
+                });
+                $('#modal-resource-tags-container').show();
+            } else {
+                $('#modal-resource-tags-container').hide();
+            }
+
+            // Set properties
+            if (resource.properties && Object.keys(resource.properties).length > 0) {
+                $('#modal-resource-properties').text(JSON.stringify(resource.properties, null, 2));
+                $('#modal-resource-properties-container').show();
+            } else {
+                $('#modal-resource-properties-container').hide();
+            }
+
+            // Set relationships
+            const relationshipsContainer = $('#modal-resource-relationships');
+            relationshipsContainer.empty();
+            if (resource.relationships && resource.relationships.length > 0) {
+                resource.relationships.forEach(rel => {
+                    relationshipsContainer.append(`
+                        <div class="bg-gray-100 p-3 rounded">
+                            <span class="font-semibold text-gray-700">${rel.type}:</span>
+                            <span class="text-gray-600">${rel.target_id}</span>
+                            ${rel.target_type ? `<span class="text-xs text-gray-500 ml-2">(${rel.target_type})</span>` : ''}
+                        </div>
+                    `);
+                });
+                $('#modal-resource-relationships-container').show();
+            } else {
+                $('#modal-resource-relationships-container').hide();
+            }
+
+            // Show modal
+            $('#resource-details-modal').removeClass('hidden');
+        }
+
+        // Close modal
+        $('#close-modal').on('click', function() {
+            $('#resource-details-modal').addClass('hidden');
+        });
+
+        // Close modal on background click
+        $('#resource-details-modal').on('click', function(e) {
+            if (e.target.id === 'resource-details-modal') {
+                $('#resource-details-modal').addClass('hidden');
+            }
+        });
 
         // Event listeners for filters
         $('#search').on('input', applyFilters);
         $('#filter-provider').on('change', applyFilters);
         $('#filter-type').on('change', applyFilters);
+        $('#group-by').on('change', renderResources);
 
         // Tab switching for upload modes
         $('#tab-single').on('click', function() {
@@ -662,7 +874,7 @@
         $('#compare-btn').on('click', function() {
             if (!baseFileData || !compareFileData) return;
 
-            $('#loading-content').removeClass('hidden');
+            $('#loading').addClass('active');
             $('#upload-section').hide();
 
             const formData = new FormData();
@@ -690,7 +902,7 @@
                     resetUpload();
                 },
                 complete: function() {
-                    $('#loading-content').addClass('hidden');
+                    $('#loading').removeClass('active');
                 }
             });
         });
@@ -984,7 +1196,7 @@
                 .attr('stroke-width', 2)
                 .on('mouseover', showTooltip)
                 .on('mouseout', hideTooltip)
-                .on('click', showResourceDetails);
+                .on('click', showResourceDetailsFromGraph);
 
             // Add labels to nodes
             node.append('text')
@@ -1018,10 +1230,9 @@
                 tooltip.classed('hidden', true);
             }
 
-            function showResourceDetails(event, d) {
-                // Create a modal or alert with resource details
-                const props = d.resource.properties ? JSON.stringify(d.resource.properties, null, 2) : 'No properties';
-                alert(`Resource: ${d.name}\n\nID: ${d.id}\nType: ${d.type}\nProvider: ${d.provider}\n\nProperties:\n${props}`);
+            function showResourceDetailsFromGraph(event, d) {
+                // Use the existing modal function
+                showResourceDetails(d.resource);
             }
 
             // Update positions on each tick
