@@ -9,6 +9,7 @@ import (
 
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/config"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/exporter"
+	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/filter"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/resource"
 )
@@ -20,6 +21,16 @@ var (
 	pretty      bool
 	includeRaw  bool
 	concurrency int
+
+	// Filter flags
+	filterTags       []string
+	filterRegex      []string
+	filterDateRange  []string
+	filterStates     string
+	filterProperties []string
+	filterCost       string
+	filterTypes      []string
+	filterProviders  []string
 )
 
 var inspectCmd = &cobra.Command{
@@ -40,6 +51,16 @@ func init() {
 	inspectCmd.Flags().BoolVarP(&pretty, "pretty", "p", true, "Pretty print output")
 	inspectCmd.Flags().BoolVar(&includeRaw, "include-raw", false, "Include raw cloud provider data")
 	inspectCmd.Flags().IntVar(&concurrency, "concurrent", 4, "Number of concurrent goroutines for parallel resource collection")
+
+	// Filter flags
+	inspectCmd.Flags().StringSliceVar(&filterTags, "filter-tag", nil, "Filter by tags (e.g., Environment=prod, Name~test, Owner)")
+	inspectCmd.Flags().StringSliceVar(&filterRegex, "filter-regex", nil, "Filter by regex (e.g., name:/prod-.*/, id:/^i-/)")
+	inspectCmd.Flags().StringSliceVar(&filterDateRange, "filter-date", nil, "Filter by date range (e.g., created:>2024-01-01, updated:2024-01..2024-12)")
+	inspectCmd.Flags().StringVar(&filterStates, "filter-state", "", "Filter by resource states (comma-separated, e.g., running,active)")
+	inspectCmd.Flags().StringSliceVar(&filterProperties, "filter-property", nil, "Filter by property (e.g., vm_size=Standard_D2s_v3, enabled=true, cost>100)")
+	inspectCmd.Flags().StringVar(&filterCost, "filter-cost", "", "Filter by cost (e.g., 100..500, >100, <500)")
+	inspectCmd.Flags().StringSliceVar(&filterTypes, "filter-type", nil, "Filter by resource types (e.g., aws:ec2:instance)")
+	inspectCmd.Flags().StringSliceVar(&filterProviders, "filter-provider", nil, "Filter by providers (e.g., aws, azure, gcp)")
 }
 
 // contextKey is a type for context keys to avoid collisions
@@ -117,6 +138,18 @@ func runInspect(cmd *cobra.Command, args []string) error {
 
 	fmt.Fprintf(os.Stderr, "Total resources collected: %d\n", len(allResources.Resources))
 
+	// Apply filters if any
+	filters, err := buildFilters()
+	if err != nil {
+		return fmt.Errorf("failed to build filters: %w", err)
+	}
+
+	if len(filters) > 0 {
+		fmt.Fprintf(os.Stderr, "Applying filters...\n")
+		allResources = filter.ApplyFilters(allResources, filters...)
+		fmt.Fprintf(os.Stderr, "Filtered to %d resources\n", len(allResources.Resources))
+	}
+
 	// Determine output format
 	outputFormat := format
 	if outputFormat == "" {
@@ -164,4 +197,77 @@ func runInspect(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(os.Stderr, "Export completed successfully!\n")
 
 	return nil
+}
+
+// buildFilters constructs filters from command-line flags
+func buildFilters() ([]filter.Filter, error) {
+	var filters []filter.Filter
+
+	// Tag filters
+	for _, tagExpr := range filterTags {
+		f, err := filter.ParseTagFilter(tagExpr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid tag filter '%s': %w", tagExpr, err)
+		}
+		filters = append(filters, f)
+	}
+
+	// Regex filters
+	for _, regexExpr := range filterRegex {
+		f, err := filter.ParseRegexFilter(regexExpr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid regex filter '%s': %w", regexExpr, err)
+		}
+		filters = append(filters, f)
+	}
+
+	// Date range filters
+	for _, dateExpr := range filterDateRange {
+		f, err := filter.ParseDateRangeFilter(dateExpr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date filter '%s': %w", dateExpr, err)
+		}
+		filters = append(filters, f)
+	}
+
+	// State filter
+	if filterStates != "" {
+		f, err := filter.ParseStateFilter(filterStates)
+		if err != nil {
+			return nil, fmt.Errorf("invalid state filter '%s': %w", filterStates, err)
+		}
+		filters = append(filters, f)
+	}
+
+	// Property filters
+	for _, propExpr := range filterProperties {
+		f, err := filter.ParsePropertyFilter(propExpr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid property filter '%s': %w", propExpr, err)
+		}
+		filters = append(filters, f)
+	}
+
+	// Cost filter
+	if filterCost != "" {
+		f, err := filter.ParseCostFilter(filterCost)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cost filter '%s': %w", filterCost, err)
+		}
+		filters = append(filters, f)
+	}
+
+	// Type filter
+	if len(filterTypes) > 0 {
+		f := filter.ParseTypeFilter(filterTypes)
+		filters = append(filters, f)
+	}
+
+	// Provider filter
+	if len(filterProviders) > 0 {
+		f := filter.ParseProviderFilter(filterProviders)
+		filters = append(filters, f)
+	}
+
+	return filters, nil
 }
