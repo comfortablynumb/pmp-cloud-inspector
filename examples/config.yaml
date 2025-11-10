@@ -1,8 +1,12 @@
 # PMP Cloud Inspector Configuration Example
+#
+# All provider credentials are configured via environment variables for security.
+# See README for environment variable requirements for each provider.
 
 # Provider configuration
 providers:
   # AWS Provider
+  # Credentials: AWS SDK standard credential chain (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, ~/.aws/credentials, IAM role)
   - name: aws
     # Specific accounts to inspect (empty = all accounts available with credentials)
     accounts: []
@@ -11,44 +15,35 @@ providers:
       - us-east-1
       - us-west-2
       - eu-west-1
-    # Provider-specific options
-    options: {}
 
   # GitHub Provider
+  # Environment Variable: GITHUB_TOKEN (required)
   # - name: github
   #   # Organizations to inspect (empty = all user's organizations)
   #   accounts:
   #     - my-org-name
-  #   # GitHub requires a personal access token
-  #   options:
-  #     token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
   # GitLab Provider
+  # Environment Variables: GITLAB_TOKEN (required), GITLAB_BASE_URL (optional)
   # - name: gitlab
   #   # Groups to inspect (empty = all accessible projects)
   #   accounts:
   #     - my-group-name
-  #   options:
-  #     token: "glpat-xxxxxxxxxxxxxxxxxxxx"
-  #     base_url: "https://gitlab.com"  # Optional: for self-hosted
 
   # JFrog Artifactory Provider
+  # Environment Variables: JFROG_BASE_URL (required), JFROG_API_KEY (or JFROG_USERNAME + JFROG_PASSWORD)
   # - name: jfrog
-  #   options:
-  #     base_url: "https://mycompany.jfrog.io"
-  #     api_key: "AKCxxxxxxxxxxxxxxxxxxxx"
-  #     # OR use username/password:
-  #     # username: "admin"
-  #     # password: "password"
 
   # GCP Provider
+  # Environment Variables: GCP_PROJECT_ID (required), GOOGLE_APPLICATION_CREDENTIALS (optional)
   # - name: gcp
   #   regions:
   #     - us-central1
   #     - us-east1
-  #   options:
-  #     project_id: "my-gcp-project"
-  #     credentials_file: "/path/to/service-account-key.json"  # Optional
+
+  # Okta Provider
+  # Environment Variables: OKTA_ORG_URL (required), OKTA_API_TOKEN (required)
+  # - name: okta
 
 # Resource configuration
 resources:
@@ -72,6 +67,9 @@ resources:
   #   - aws:memorydb:cluster
   #   - aws:elasticache:cluster
   #   - aws:secretsmanager:secret
+  #   - aws:sns:topic
+  #   - aws:sqs:queue
+  #   - aws:dynamodb:table
   # Available GitHub types:
   #   - github:organization
   #   - github:repository
@@ -94,6 +92,11 @@ resources:
   #   - gcp:storage:bucket
   #   - gcp:cloudfunctions:function
   #   - gcp:run:service
+  # Available Okta types:
+  #   - okta:user
+  #   - okta:group
+  #   - okta:application
+  #   - okta:authorizationserver
   types: []
 
   # Collect all available resource types

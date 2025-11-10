@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/config"
@@ -42,24 +43,21 @@ func (p *Provider) Name() string {
 func (p *Provider) Initialize(ctx context.Context, cfg config.ProviderConfig) error {
 	p.config = cfg
 
-	// Get base URL
-	baseURL, ok := cfg.Options["base_url"].(string)
-	if !ok || baseURL == "" {
-		return fmt.Errorf("jfrog base_url is required in provider options")
+	// Get base URL from environment variable
+	p.baseURL = os.Getenv("JFROG_BASE_URL")
+	if p.baseURL == "" {
+		return fmt.Errorf("JFROG_BASE_URL environment variable is required")
 	}
-	p.baseURL = baseURL
 
-	// Authentication: API key or username/password
-	if apiKey, ok := cfg.Options["api_key"].(string); ok && apiKey != "" {
-		p.apiKey = apiKey
-	} else {
-		username, uok := cfg.Options["username"].(string)
-		password, pok := cfg.Options["password"].(string)
-		if !uok || !pok || username == "" || password == "" {
-			return fmt.Errorf("jfrog requires either api_key or username/password in provider options")
+	// Authentication: API key or username/password from environment variables
+	p.apiKey = os.Getenv("JFROG_API_KEY")
+	if p.apiKey == "" {
+		// Try username/password authentication
+		p.username = os.Getenv("JFROG_USERNAME")
+		p.password = os.Getenv("JFROG_PASSWORD")
+		if p.username == "" || p.password == "" {
+			return fmt.Errorf("JFROG_API_KEY or (JFROG_USERNAME and JFROG_PASSWORD) environment variables are required")
 		}
-		p.username = username
-		p.password = password
 	}
 
 	p.client = &http.Client{

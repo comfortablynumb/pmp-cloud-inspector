@@ -28,6 +28,9 @@ const (
 	TypeAWSMemoryDB      ResourceType = "aws:memorydb:cluster"
 	TypeAWSElastiCache   ResourceType = "aws:elasticache:cluster"
 	TypeAWSSecret        ResourceType = "aws:secretsmanager:secret"
+	TypeAWSSNSTopic      ResourceType = "aws:sns:topic"
+	TypeAWSSQSQueue      ResourceType = "aws:sqs:queue"
+	TypeAWSDynamoDBTable ResourceType = "aws:dynamodb:table"
 
 	// GitHub Resource Types
 	TypeGitHubOrganization ResourceType = "github:organization"
@@ -54,6 +57,12 @@ const (
 	TypeGCPStorageBucket   ResourceType = "gcp:storage:bucket"
 	TypeGCPCloudFunction   ResourceType = "gcp:cloudfunctions:function"
 	TypeGCPCloudRun        ResourceType = "gcp:run:service"
+
+	// Okta Resource Types
+	TypeOktaUser                ResourceType = "okta:user"
+	TypeOktaGroup               ResourceType = "okta:group"
+	TypeOktaApplication         ResourceType = "okta:application"
+	TypeOktaAuthorizationServer ResourceType = "okta:authorizationserver"
 )
 
 // Resource represents a cloud resource

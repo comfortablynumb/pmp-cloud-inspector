@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/google/go-github/v57/github"
 	"golang.org/x/oauth2"
@@ -38,11 +39,10 @@ func (p *Provider) Name() string {
 func (p *Provider) Initialize(ctx context.Context, cfg config.ProviderConfig) error {
 	p.config = cfg
 
-	// Get GitHub token from options
-	if token, ok := cfg.Options["token"].(string); ok && token != "" {
-		p.token = token
-	} else {
-		return fmt.Errorf("github token is required in options")
+	// Get GitHub token from environment variable
+	p.token = os.Getenv("GITHUB_TOKEN")
+	if p.token == "" {
+		return fmt.Errorf("GITHUB_TOKEN environment variable is required")
 	}
 
 	// Create authenticated client
