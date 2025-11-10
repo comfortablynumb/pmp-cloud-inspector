@@ -62,7 +62,13 @@
 - Cloud Functions
 - Cloud Run Services
 
-More providers (Azure, Okta, etc.) coming soon!
+### Okta
+- Users
+- Groups
+- Applications
+- Authorization Servers
+
+More providers (Azure, Auth0, etc.) coming soon!
 
 ## Installation
 
@@ -77,12 +83,13 @@ go build -o pmp-cloud-inspector ./cmd/inspector
 
 # Build with additional providers (requires downloading dependencies)
 go mod tidy
-go build -tags "gitlab jfrog gcp" -o pmp-cloud-inspector ./cmd/inspector
+go build -tags "gitlab jfrog gcp okta" -o pmp-cloud-inspector ./cmd/inspector
 
 # Or build with specific providers only
 go build -tags "gitlab" -o pmp-cloud-inspector ./cmd/inspector  # GitLab only
 go build -tags "gcp" -o pmp-cloud-inspector ./cmd/inspector     # GCP only
-go build -tags "gitlab gcp" -o pmp-cloud-inspector ./cmd/inspector  # Multiple
+go build -tags "okta" -o pmp-cloud-inspector ./cmd/inspector    # Okta only
+go build -tags "gitlab gcp okta" -o pmp-cloud-inspector ./cmd/inspector  # Multiple
 ```
 
 ### Prerequisites
@@ -543,6 +550,34 @@ Required GCP IAM permissions:
 - `cloudfunctions.functions.list`
 - `run.services.list`
 
+### Okta Authentication
+
+The Okta provider requires an API token.
+
+**Setup:**
+1. Go to Okta Admin Console → Security → API → Tokens
+2. Click "Create Token"
+3. Give it a descriptive name (e.g., "PMP Cloud Inspector")
+4. Copy the token value (you won't be able to see it again)
+
+**Environment Variables:**
+```bash
+export OKTA_ORG_URL="https://your-domain.okta.com"
+export OKTA_API_TOKEN="00xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+**Config file:**
+```yaml
+providers:
+  - name: okta
+```
+
+Required Okta API scopes (automatically included with API tokens):
+- `okta.users.read` - Read user information
+- `okta.groups.read` - Read group information
+- `okta.apps.read` - Read application information
+- `okta.authorizationServers.read` - Read authorization server information
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -563,7 +598,7 @@ See LICENSE file for details.
 - [x] Multi-platform binary releases with GoReleaser
 
 ### In Progress / Planned
-- [ ] Okta provider support
+- [x] Okta provider support
 - [ ] Auth0 provider support
 - [ ] Azure provider support
 - [ ] Additional AWS resource types (RDS, S3, CloudWatch, Step Functions, etc.)

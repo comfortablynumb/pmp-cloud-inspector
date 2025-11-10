@@ -57,6 +57,12 @@ const (
 	TypeGCPStorageBucket   ResourceType = "gcp:storage:bucket"
 	TypeGCPCloudFunction   ResourceType = "gcp:cloudfunctions:function"
 	TypeGCPCloudRun        ResourceType = "gcp:run:service"
+
+	// Okta Resource Types
+	TypeOktaUser               ResourceType = "okta:user"
+	TypeOktaGroup              ResourceType = "okta:group"
+	TypeOktaApplication        ResourceType = "okta:application"
+	TypeOktaAuthorizationServer ResourceType = "okta:authorizationserver"
 )
 
 // Resource represents a cloud resource

@@ -41,6 +41,10 @@ providers:
   #     - us-central1
   #     - us-east1
 
+  # Okta Provider
+  # Environment Variables: OKTA_ORG_URL (required), OKTA_API_TOKEN (required)
+  # - name: okta
+
 # Resource configuration
 resources:
   # Specific resource types to collect
@@ -88,6 +92,11 @@ resources:
   #   - gcp:storage:bucket
   #   - gcp:cloudfunctions:function
   #   - gcp:run:service
+  # Available Okta types:
+  #   - okta:user
+  #   - okta:group
+  #   - okta:application
+  #   - okta:authorizationserver
   types: []
 
   # Collect all available resource types
