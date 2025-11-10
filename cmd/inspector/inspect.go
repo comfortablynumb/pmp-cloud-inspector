@@ -144,8 +144,8 @@ func runInspect(cmd *cobra.Command, args []string) error {
 	// Estimate costs if enabled
 	if estimateCosts {
 		fmt.Fprintf(os.Stderr, "Estimating costs...\n")
-		if err := estimateResourceCosts(allResources); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to estimate costs: %v\n", err)
+		if costErr := estimateResourceCosts(allResources); costErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to estimate costs: %v\n", costErr)
 		} else if allResources.Metadata.TotalCost != nil {
 			fmt.Fprintf(os.Stderr, "Estimated total monthly cost: $%.2f %s\n",
 				allResources.Metadata.TotalCost.Total,

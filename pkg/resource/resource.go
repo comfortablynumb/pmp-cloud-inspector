@@ -102,10 +102,10 @@ type Resource struct {
 
 // ResourceCost represents cost information for a resource
 type ResourceCost struct {
-	MonthlyEstimate float64           `json:"monthly_estimate"`    // Estimated monthly cost
-	Currency        string            `json:"currency"`            // Currency code (USD, EUR, etc.)
+	MonthlyEstimate float64            `json:"monthly_estimate"`    // Estimated monthly cost
+	Currency        string             `json:"currency"`            // Currency code (USD, EUR, etc.)
 	Breakdown       map[string]float64 `json:"breakdown,omitempty"` // Cost breakdown by component
-	LastUpdated     time.Time         `json:"last_updated"`        // When cost was last calculated
+	LastUpdated     time.Time          `json:"last_updated"`        // When cost was last calculated
 }
 
 // Relationship represents a connection between resources
@@ -150,12 +150,12 @@ type CollectionMetadata struct {
 
 // CostSummary provides cost aggregations for the collection
 type CostSummary struct {
-	Total      float64             `json:"total"`                  // Total monthly cost estimate
-	Currency   string              `json:"currency"`               // Currency code
-	ByProvider map[string]float64  `json:"by_provider,omitempty"`  // Cost breakdown by provider
-	ByRegion   map[string]float64  `json:"by_region,omitempty"`    // Cost breakdown by region
-	ByType     map[string]float64  `json:"by_type,omitempty"`      // Cost breakdown by resource type
-	ByTag      map[string]float64  `json:"by_tag,omitempty"`       // Cost breakdown by tag values
+	Total      float64            `json:"total"`                 // Total monthly cost estimate
+	Currency   string             `json:"currency"`              // Currency code
+	ByProvider map[string]float64 `json:"by_provider,omitempty"` // Cost breakdown by provider
+	ByRegion   map[string]float64 `json:"by_region,omitempty"`   // Cost breakdown by region
+	ByType     map[string]float64 `json:"by_type,omitempty"`     // Cost breakdown by resource type
+	ByTag      map[string]float64 `json:"by_tag,omitempty"`      // Cost breakdown by tag values
 }
 
 // NewCollection creates a new resource collection

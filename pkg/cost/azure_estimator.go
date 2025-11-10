@@ -119,7 +119,7 @@ func (e *AzureEstimator) getVMSizeMultiplier(vmSize string) float64 {
 }
 
 // estimateStorageCost provides storage account cost
-func (e *AzureEstimator) estimateStorageCost(res *resource.Resource, basePrice float64) *resource.ResourceCost {
+func (e *AzureEstimator) estimateStorageCost(_ *resource.Resource, basePrice float64) *resource.ResourceCost {
 	return &resource.ResourceCost{
 		MonthlyEstimate: basePrice,
 		Currency:        "USD",
@@ -130,7 +130,7 @@ func (e *AzureEstimator) estimateStorageCost(res *resource.Resource, basePrice f
 }
 
 // estimateAppServiceCost provides App Service cost based on plan
-func (e *AzureEstimator) estimateAppServiceCost(res *resource.Resource, basePrice float64) *resource.ResourceCost {
+func (e *AzureEstimator) estimateAppServiceCost(_ *resource.Resource, basePrice float64) *resource.ResourceCost {
 	cost := &resource.ResourceCost{
 		MonthlyEstimate: basePrice,
 		Currency:        "USD",
