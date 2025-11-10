@@ -314,6 +314,82 @@ pmp-cloud-inspector ui -p 3000
 
 Then open your browser at `http://localhost:8080` and upload your exported JSON or YAML files to view and explore your cloud resources interactively.
 
+**UI Features:**
+- Full-text search across all resource attributes
+- Filter by provider, type, region
+- Sort by name, type, or cost
+- Group resources by provider, type, region, tags, or cost range
+- Interactive D3.js graph visualization
+- Resource details modal with drill-down
+- **Cost visualization with breakdown charts**
+- Min/Max cost filtering
+
+### Cost Estimation
+
+The tool includes built-in cost estimation for cloud resources. When enabled, it provides monthly cost estimates for each resource based on simplified pricing models.
+
+**Enable cost estimation:**
+```bash
+pmp-cloud-inspector inspect -c config.yaml --estimate-costs -o resources.json
+```
+
+**Cost Features:**
+- Estimated monthly costs for 15+ AWS resource types
+- Estimated monthly costs for 6 Azure resource types
+- Estimated monthly costs for 5 GCP resource types
+- Instance/VM size-based cost multipliers
+- Stopped/terminated resource detection (zero cost)
+- Cost aggregations by provider, region, type, and tags
+- Cost breakdowns by component (compute, storage, etc.)
+
+**UI Cost Visualization:**
+- Monthly cost summary card
+- Cost badges on each resource card
+- Cost filtering (min/max range)
+- Sort by cost (high to low, low to high)
+- Group by cost ranges
+- Interactive pie charts showing:
+  - Cost by Provider
+  - Cost by Region (top 10)
+  - Cost by Resource Type (top 10)
+- Detailed cost breakdown in resource modal
+
+**Example output with costs:**
+```json
+{
+  "resources": [{
+    "id": "i-1234567890",
+    "name": "my-instance",
+    "type": "aws:ec2:instance",
+    "cost": {
+      "monthly_estimate": 30.37,
+      "currency": "USD",
+      "breakdown": {
+        "compute": 30.37
+      }
+    }
+  }],
+  "metadata": {
+    "total_cost": {
+      "total": 1234.56,
+      "currency": "USD",
+      "by_provider": {
+        "aws": 800.50,
+        "azure": 300.06
+      },
+      "by_region": {
+        "us-east-1": 500.00
+      }
+    }
+  }
+}
+```
+
+**Note:** Cost estimates use simplified pricing models based on industry averages. For production use cases requiring accurate real-time pricing, integrate with:
+- AWS Cost Explorer API
+- Azure Cost Management API
+- GCP Cloud Billing Catalog API
+
 ### `compare` - Compare Exports and Detect Drift
 
 Compare two cloud resource exports to identify changes between different points in time.
@@ -971,11 +1047,13 @@ See LICENSE file for details.
 - [x] Concurrent resource collection for improved performance
 - [x] Full-text search across all resource attributes
 - [x] D3.js graph visualization of resource relationships
-- [x] Resource grouping in UI (by provider, type, region, tags)
+- [x] Resource grouping in UI (by provider, type, region, tags, cost)
+- [x] **Cost estimation and tracking** with UI visualization
 
 ### Planned / Future Enhancements
 - [ ] Additional AWS resource types (RDS, S3, CloudWatch, Step Functions, ECS, Fargate, etc.)
-- [ ] Cost estimation and tracking
+- [ ] Real-time cost API integration (AWS Cost Explorer, Azure Cost Management, GCP Billing)
+- [ ] Historical cost tracking and trend analysis
 - [ ] Security compliance checks (CIS benchmarks, security best practices)
 - [ ] Resource tagging recommendations
 - [ ] Export to Infrastructure-as-Code (Terraform, CloudFormation, Pulumi)
