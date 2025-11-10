@@ -6,6 +6,7 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
@@ -51,16 +52,16 @@ func (p *Provider) Name() string {
 func (p *Provider) Initialize(ctx context.Context, cfg config.ProviderConfig) error {
 	p.config = cfg
 
-	// Get project ID
-	projectID, ok := cfg.Options["project_id"].(string)
-	if !ok || projectID == "" {
-		return fmt.Errorf("gcp project_id is required in provider options")
+	// Get project ID from environment variable
+	p.projectID = os.Getenv("GCP_PROJECT_ID")
+	if p.projectID == "" {
+		return fmt.Errorf("GCP_PROJECT_ID environment variable is required")
 	}
-	p.projectID = projectID
 
-	// Get credentials file (optional, uses Application Default Credentials if not provided)
+	// Get credentials file from environment variable (optional, uses Application Default Credentials if not provided)
+	// GOOGLE_APPLICATION_CREDENTIALS is the standard env var that GCP SDK automatically uses
 	var opts []option.ClientOption
-	if credsFile, ok := cfg.Options["credentials_file"].(string); ok && credsFile != "" {
+	if credsFile := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); credsFile != "" {
 		opts = append(opts, option.WithCredentialsFile(credsFile))
 	}
 

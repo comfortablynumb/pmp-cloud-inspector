@@ -6,6 +6,7 @@ package gitlab
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/xanzy/go-gitlab"
 
@@ -37,14 +38,14 @@ func (p *Provider) Name() string {
 func (p *Provider) Initialize(ctx context.Context, cfg config.ProviderConfig) error {
 	p.config = cfg
 
-	// Get token from options
-	token, ok := cfg.Options["token"].(string)
-	if !ok || token == "" {
-		return fmt.Errorf("gitlab token is required in provider options")
+	// Get token from environment variable
+	token := os.Getenv("GITLAB_TOKEN")
+	if token == "" {
+		return fmt.Errorf("GITLAB_TOKEN environment variable is required")
 	}
 
-	// Get base URL (optional, defaults to gitlab.com)
-	baseURL, _ := cfg.Options["base_url"].(string)
+	// Get base URL from environment variable (optional, defaults to gitlab.com)
+	baseURL := os.Getenv("GITLAB_BASE_URL")
 
 	var err error
 	if baseURL != "" {
