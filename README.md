@@ -96,21 +96,9 @@ More providers coming soon!
 Install with a single command:
 
 ```bash
-# Linux (amd64)
-VERSION=v0.2.0  # Replace with actual version
-curl -sL https://github.com/comfortablynumb/pmp-cloud-inspector/releases/download/${VERSION}/pmp-cloud-inspector_${VERSION#v}_Linux_x86_64.tar.gz | tar -xz && chmod +x pmp-cloud-inspector && sudo mv pmp-cloud-inspector /usr/local/bin/
+# Linux or macOS (amd64 / arm64)
 
-# Linux (arm64)
-VERSION=v0.2.0  # Replace with actual version
-curl -sL https://github.com/comfortablynumb/pmp-cloud-inspector/releases/download/${VERSION}/pmp-cloud-inspector_${VERSION#v}_Linux_arm64.tar.gz | tar -xz && chmod +x pmp-cloud-inspector && sudo mv pmp-cloud-inspector /usr/local/bin/
-
-# macOS (amd64/Intel)
-VERSION=v0.2.0  # Replace with actual version
-curl -sL https://github.com/comfortablynumb/pmp-cloud-inspector/releases/download/${VERSION}/pmp-cloud-inspector_${VERSION#v}_Darwin_x86_64.tar.gz | tar -xz && chmod +x pmp-cloud-inspector && sudo mv pmp-cloud-inspector /usr/local/bin/
-
-# macOS (arm64/Apple Silicon)
-VERSION=v0.2.0  # Replace with actual version
-curl -sL https://github.com/comfortablynumb/pmp-cloud-inspector/releases/download/${VERSION}/pmp-cloud-inspector_${VERSION#v}_Darwin_arm64.tar.gz | tar -xz && chmod +x pmp-cloud-inspector && sudo mv pmp-cloud-inspector /usr/local/bin/
+VERSION=v0.2.0 OS=$(uname -s) ARCH=$(uname -m) curl -sL -o /tmp/pmp-cloud-inspector.tar.gz https://github.com/comfortablynumb/pmp-cloud-inspector/releases/download/${VERSION}/pmp-cloud-inspector_${VERSION#v}_${OS}_${ARCH}.tar.gz && tar -xz /tmp/pmp-cloud-inspector.tar.gz && chmod +x /tmp/pmp-cloud-inspector && sudo mv pmp-cloud-inspector /usr/local/bin/
 ```
 
 Or download, extract, and install manually:
