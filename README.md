@@ -32,6 +32,9 @@
 - MemoryDB Clusters
 - ElastiCache Clusters
 - Secrets Manager Secrets
+- SNS Topics
+- SQS Queues
+- DynamoDB Tables
 
 ### GitHub
 - Organizations
@@ -211,6 +214,42 @@ pmp-cloud-inspector ui -p 3000
 
 Then open your browser at `http://localhost:8080` and upload your exported JSON or YAML files to view and explore your cloud resources interactively.
 
+### `compare` - Compare Exports and Detect Drift
+
+Compare two cloud resource exports to identify changes between different points in time.
+
+```bash
+pmp-cloud-inspector compare [flags]
+```
+
+**Flags:**
+- `-b, --base string`: Base export file (older snapshot) [required]
+- `-c, --compare string`: Compare export file (newer snapshot) [required]
+- `-t, --type string`: Output type: summary, detailed, json (default "summary")
+
+**Examples:**
+
+Compare two exports with summary view:
+```bash
+pmp-cloud-inspector compare -b yesterday.json -c today.json
+```
+
+Get detailed changes:
+```bash
+pmp-cloud-inspector compare -b yesterday.json -c today.json -t detailed
+```
+
+Get JSON output for programmatic use:
+```bash
+pmp-cloud-inspector compare -b yesterday.json -c today.json -t json
+```
+
+The compare command shows:
+- **Added resources**: Resources that exist in the new export but not in the old one
+- **Removed resources**: Resources that existed in the old export but not in the new one
+- **Modified resources**: Resources that exist in both but have changed properties
+- **Unchanged resources**: Resources that are identical in both exports
+
 ## Configuration
 
 The configuration file uses YAML format with three main sections:
@@ -266,6 +305,9 @@ Available AWS resource types:
 - `aws:memorydb:cluster`
 - `aws:elasticache:cluster`
 - `aws:secretsmanager:secret`
+- `aws:sns:topic`
+- `aws:sqs:queue`
+- `aws:dynamodb:table`
 
 Available GitHub resource types:
 - `github:organization`
@@ -393,89 +435,104 @@ Required IAM permissions:
 - `secretsmanager:ListSecrets`
 - `sts:GetCallerIdentity`
 
-## GitHub Authentication
+## Provider Authentication
 
-The GitHub provider requires a personal access token for authentication.
+All provider credentials are configured using environment variables for security.
 
-To create a personal access token:
+### GitHub Authentication
+
+The GitHub provider requires a personal access token.
+
+**Setup:**
 1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
 2. Click "Generate new token (classic)"
-3. Give it a descriptive name
-4. Select scopes (minimum required):
+3. Select scopes:
    - `read:org` - Read organization data
    - `repo` - Access repositories (for private repos)
    - `admin:org` - Read organization teams and members
 
-Configure the token in your config file:
+**Environment Variable:**
+```bash
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
 
+**Config file** (only specify accounts to inspect):
 ```yaml
 providers:
   - name: github
     accounts:
       - my-organization
-    options:
-      token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
-## GitLab Authentication
+### GitLab Authentication
 
-The GitLab provider requires a personal access token for authentication.
+The GitLab provider requires a personal access token.
 
-To create a personal access token:
+**Setup:**
 1. Go to GitLab Settings → Access Tokens
-2. Create a new token with the following scopes:
+2. Create a new token with scopes:
    - `read_api` - Read API access
    - `read_repository` - Read repository data
 
-Configure the token in your config file:
+**Environment Variables:**
+```bash
+export GITLAB_TOKEN="glpat-xxxxxxxxxxxxxxxxxxxx"
+export GITLAB_BASE_URL="https://gitlab.com"  # Optional: for self-hosted GitLab
+```
 
+**Config file:**
 ```yaml
 providers:
   - name: gitlab
     accounts:
       - my-group  # Optional: specific groups to inspect
-    options:
-      token: "glpat-xxxxxxxxxxxxxxxxxxxx"
-      base_url: "https://gitlab.com"  # Optional: for self-hosted GitLab
 ```
 
-## JFrog Artifactory Authentication
+### JFrog Artifactory Authentication
 
-The JFrog provider requires either an API key or username/password for authentication.
+The JFrog provider requires either an API key or username/password.
 
-Configure in your config file:
+**Environment Variables (API Key):**
+```bash
+export JFROG_BASE_URL="https://mycompany.jfrog.io"
+export JFROG_API_KEY="AKCxxxxxxxxxxxxxxxxxxxx"
+```
 
+**Or with Username/Password:**
+```bash
+export JFROG_BASE_URL="https://mycompany.jfrog.io"
+export JFROG_USERNAME="admin"
+export JFROG_PASSWORD="password"
+```
+
+**Config file:**
 ```yaml
 providers:
   - name: jfrog
-    options:
-      base_url: "https://mycompany.jfrog.io"
-      api_key: "AKCxxxxxxxxxxxxxxxxxxxx"
-      # OR use username/password:
-      # username: "admin"
-      # password: "password"
 ```
 
-## GCP Authentication
+### GCP Authentication
 
 The GCP provider uses Application Default Credentials or a service account key file.
 
-To set up authentication:
+**Setup:**
 1. Create a service account in GCP Console
 2. Grant necessary IAM roles (Viewer or custom roles)
 3. Download the JSON key file
 
-Configure in your config file:
+**Environment Variables:**
+```bash
+export GCP_PROJECT_ID="my-gcp-project"
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"  # Optional: uses ADC if not provided
+```
 
+**Config file:**
 ```yaml
 providers:
   - name: gcp
     regions:
       - us-central1
       - us-east1
-    options:
-      project_id: "my-gcp-project"
-      credentials_file: "/path/to/service-account-key.json"  # Optional: uses ADC if not provided
 ```
 
 Required GCP IAM permissions:
@@ -496,12 +553,22 @@ See LICENSE file for details.
 
 ## Roadmap
 
-- [ ] GCP provider support
-- [ ] Azure provider support
+### Completed
+- [x] GCP provider support
+- [x] GitLab provider support
+- [x] JFrog Artifactory provider support
+- [x] Additional AWS resource types (SNS, SQS, DynamoDB)
+- [x] Resource drift detection and comparison
+- [x] Web UI for viewing and comparing exports
+- [x] Multi-platform binary releases with GoReleaser
+
+### In Progress / Planned
 - [ ] Okta provider support
-- [ ] JFrog provider support
-- [ ] Additional AWS resource types (RDS, S3, DynamoDB, SQS, SNS, etc.)
+- [ ] Auth0 provider support
+- [ ] Azure provider support
+- [ ] Additional AWS resource types (RDS, S3, CloudWatch, Step Functions, etc.)
 - [ ] Advanced filtering and querying
-- [ ] Resource change detection
 - [ ] Cost estimation
 - [ ] Security compliance checks
+- [ ] Resource tagging recommendations
+- [ ] Export to Terraform/CloudFormation
