@@ -116,7 +116,7 @@ func (e *GCPEstimator) getMachineTypeMultiplier(machineType string) float64 {
 }
 
 // estimateStorageCost provides storage bucket cost
-func (e *GCPEstimator) estimateStorageCost(res *resource.Resource, basePrice float64) *resource.ResourceCost {
+func (e *GCPEstimator) estimateStorageCost(_ *resource.Resource, basePrice float64) *resource.ResourceCost {
 	return &resource.ResourceCost{
 		MonthlyEstimate: basePrice,
 		Currency:        "USD",
