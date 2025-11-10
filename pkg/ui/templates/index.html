@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         .resource-card {
             transition: all 0.2s;
@@ -282,7 +283,7 @@
 
             <!-- Filters and Search -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Search (Full-Text)</label>
                         <input type="text" id="search" placeholder="Search across names, IDs, types, properties..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
@@ -296,6 +297,7 @@
                             <option value="type">Type</option>
                             <option value="region">Region</option>
                             <option value="tag">Tag</option>
+                            <option value="cost">Cost Range</option>
                         </select>
                     </div>
                     <div>
@@ -310,11 +312,41 @@
                             <option value="">All Types</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                        <select id="sort-by" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Default</option>
+                            <option value="name">Name</option>
+                            <option value="type">Type</option>
+                            <option value="cost-desc">Cost (High to Low)</option>
+                            <option value="cost-asc">Cost (Low to High)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Min Cost/Month ($)</label>
+                        <input type="number" id="filter-cost-min" placeholder="0" min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Max Cost/Month ($)</label>
+                        <input type="number" id="filter-cost-max" placeholder="Unlimited" min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="apply-cost-filter" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Apply Cost Filter
+                        </button>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="clear-filters" class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+                            Clear All Filters
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
@@ -332,6 +364,19 @@
                     <div class="flex items-center">
                         <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
                             <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Monthly Cost</p>
+                            <p class="text-2xl font-bold text-gray-900" id="summary-cost">$0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-purple-100 rounded-md p-3">
+                            <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                         </div>
@@ -343,8 +388,8 @@
                 </div>
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-purple-100 rounded-md p-3">
-                            <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex-shrink-0 bg-indigo-100 rounded-md p-3">
+                            <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
                             </svg>
                         </div>
@@ -365,6 +410,31 @@
                             <p class="text-sm font-medium text-gray-500">Regions</p>
                             <p class="text-2xl font-bold text-gray-900" id="summary-regions">0</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Breakdown Section -->
+            <div id="cost-breakdown-section" class="hidden bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Cost Breakdown</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- By Provider Chart -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">By Provider</h3>
+                        <canvas id="cost-by-provider-chart" width="200" height="200"></canvas>
+                        <div id="cost-by-provider-legend" class="mt-3 text-xs"></div>
+                    </div>
+                    <!-- By Region Chart -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">By Region</h3>
+                        <canvas id="cost-by-region-chart" width="200" height="200"></canvas>
+                        <div id="cost-by-region-legend" class="mt-3 text-xs"></div>
+                    </div>
+                    <!-- By Type Chart -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">By Resource Type (Top 10)</h3>
+                        <canvas id="cost-by-type-chart" width="200" height="200"></canvas>
+                        <div id="cost-by-type-legend" class="mt-3 text-xs"></div>
                     </div>
                 </div>
             </div>
@@ -447,6 +517,23 @@
                     <div class="md:col-span-2" id="modal-resource-arn-container">
                         <p class="text-sm font-medium text-gray-500">ARN</p>
                         <p class="text-sm text-gray-900 break-all" id="modal-resource-arn"></p>
+                    </div>
+                </div>
+
+                <div class="mb-6" id="modal-resource-cost-container" style="display: none;">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-3">Cost Estimate</h4>
+                    <div class="bg-green-50 rounded p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">Monthly Estimate</p>
+                                <p class="text-2xl font-bold text-green-700" id="modal-resource-cost-total">$0.00</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-gray-600">Currency</p>
+                                <p class="text-lg font-semibold text-gray-700" id="modal-resource-cost-currency">USD</p>
+                            </div>
+                        </div>
+                        <div id="modal-resource-cost-breakdown" class="mt-4"></div>
                     </div>
                 </div>
 
@@ -533,6 +620,20 @@
             $('#summary-providers').text(Object.keys(metadata.by_provider || {}).length);
             $('#summary-types').text(Object.keys(metadata.by_type || {}).length);
             $('#summary-regions').text(Object.keys(metadata.by_region || {}).length);
+
+            // Update cost summary
+            if (metadata.total_cost && metadata.total_cost.total > 0) {
+                const totalCost = metadata.total_cost.total;
+                const currency = metadata.total_cost.currency || 'USD';
+                $('#summary-cost').text(`$${totalCost.toFixed(2)}`);
+
+                // Show cost breakdown section
+                $('#cost-breakdown-section').removeClass('hidden');
+                renderCostCharts(metadata.total_cost);
+            } else {
+                $('#summary-cost').text('$0');
+                $('#cost-breakdown-section').addClass('hidden');
+            }
         }
 
         function populateFilters() {
@@ -554,6 +655,9 @@
             });
         }
 
+        let costFilterMin = null;
+        let costFilterMax = null;
+
         function applyFilters() {
             const search = $('#search').val().toLowerCase();
             const provider = $('#filter-provider').val();
@@ -564,13 +668,53 @@
                 const matchesProvider = !provider || resource.provider === provider;
                 const matchesType = !type || resource.type === type;
 
-                return matchesSearch && matchesProvider && matchesType;
+                // Cost filtering
+                let matchesCost = true;
+                if (costFilterMin !== null || costFilterMax !== null) {
+                    const resourceCost = resource.cost ? resource.cost.monthly_estimate : 0;
+                    if (costFilterMin !== null && resourceCost < costFilterMin) matchesCost = false;
+                    if (costFilterMax !== null && resourceCost > costFilterMax) matchesCost = false;
+                }
+
+                return matchesSearch && matchesProvider && matchesType && matchesCost;
             });
+
+            // Apply sorting
+            const sortBy = $('#sort-by').val();
+            if (sortBy) {
+                sortResources(sortBy);
+            }
 
             renderResources();
             // Update graph if in graph view
             if ($('#graph-view').is(':visible')) {
                 renderGraph();
+            }
+        }
+
+        // Sort resources
+        function sortResources(sortBy) {
+            switch (sortBy) {
+                case 'name':
+                    filteredResources.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                case 'type':
+                    filteredResources.sort((a, b) => a.type.localeCompare(b.type));
+                    break;
+                case 'cost-desc':
+                    filteredResources.sort((a, b) => {
+                        const costA = a.cost ? a.cost.monthly_estimate : 0;
+                        const costB = b.cost ? b.cost.monthly_estimate : 0;
+                        return costB - costA;
+                    });
+                    break;
+                case 'cost-asc':
+                    filteredResources.sort((a, b) => {
+                        const costA = a.cost ? a.cost.monthly_estimate : 0;
+                        const costB = b.cost ? b.cost.monthly_estimate : 0;
+                        return costA - costB;
+                    });
+                    break;
             }
         }
 
@@ -673,6 +817,23 @@
                             key = 'No Tags';
                         }
                         break;
+                    case 'cost':
+                        // Group by cost ranges
+                        const cost = resource.cost ? resource.cost.monthly_estimate : 0;
+                        if (cost === 0) {
+                            key = '$0 (No Cost)';
+                        } else if (cost < 10) {
+                            key = '$0 - $10';
+                        } else if (cost < 50) {
+                            key = '$10 - $50';
+                        } else if (cost < 100) {
+                            key = '$50 - $100';
+                        } else if (cost < 500) {
+                            key = '$100 - $500';
+                        } else {
+                            key = '$500+';
+                        }
+                        break;
                     default:
                         key = 'Other';
                 }
@@ -711,6 +872,11 @@
                 }).join('');
             }
 
+            // Cost badge HTML
+            const costHtml = resource.cost && resource.cost.monthly_estimate > 0
+                ? `<span class="badge bg-green-100 text-green-800">$${resource.cost.monthly_estimate.toFixed(2)}/mo</span>`
+                : '';
+
             const card = $(`
                 <div class="resource-card border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer">
                     <div class="flex items-start justify-between">
@@ -719,6 +885,7 @@
                                 <span class="badge ${providerColor}">${resource.provider.toUpperCase()}</span>
                                 <span class="badge bg-gray-100 text-gray-700">${typeDisplay}</span>
                                 ${resource.region ? `<span class="badge bg-blue-100 text-blue-700">${resource.region}</span>` : ''}
+                                ${costHtml}
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-1">${resource.name}</h3>
                             <p class="text-sm text-gray-500 mb-2">ID: ${resource.id}</p>
@@ -766,6 +933,31 @@
                 $('#modal-resource-arn-container').show();
             } else {
                 $('#modal-resource-arn-container').hide();
+            }
+
+            // Set cost information
+            if (resource.cost && resource.cost.monthly_estimate > 0) {
+                $('#modal-resource-cost-total').text(`$${resource.cost.monthly_estimate.toFixed(2)}`);
+                $('#modal-resource-cost-currency').text(resource.cost.currency || 'USD');
+
+                // Show cost breakdown if available
+                const breakdownContainer = $('#modal-resource-cost-breakdown');
+                breakdownContainer.empty();
+                if (resource.cost.breakdown && Object.keys(resource.cost.breakdown).length > 0) {
+                    breakdownContainer.append('<p class="text-xs font-semibold text-gray-600 mb-2">Breakdown:</p>');
+                    Object.entries(resource.cost.breakdown).forEach(([key, value]) => {
+                        breakdownContainer.append(`
+                            <div class="flex justify-between text-sm text-gray-700 py-1">
+                                <span>${key}:</span>
+                                <span class="font-semibold">$${value.toFixed(2)}</span>
+                            </div>
+                        `);
+                    });
+                }
+
+                $('#modal-resource-cost-container').show();
+            } else {
+                $('#modal-resource-cost-container').hide();
             }
 
             // Set tags
@@ -830,7 +1022,32 @@
         $('#search').on('input', applyFilters);
         $('#filter-provider').on('change', applyFilters);
         $('#filter-type').on('change', applyFilters);
+        $('#sort-by').on('change', applyFilters);
         $('#group-by').on('change', renderResources);
+
+        // Cost filter event handlers
+        $('#apply-cost-filter').on('click', function() {
+            const minVal = $('#filter-cost-min').val();
+            const maxVal = $('#filter-cost-max').val();
+
+            costFilterMin = minVal ? parseFloat(minVal) : null;
+            costFilterMax = maxVal ? parseFloat(maxVal) : null;
+
+            applyFilters();
+        });
+
+        $('#clear-filters').on('click', function() {
+            $('#search').val('');
+            $('#filter-provider').val('');
+            $('#filter-type').val('');
+            $('#filter-cost-min').val('');
+            $('#filter-cost-max').val('');
+            $('#sort-by').val('');
+            $('#group-by').val('');
+            costFilterMin = null;
+            costFilterMax = null;
+            applyFilters();
+        });
 
         // Tab switching for upload modes
         $('#tab-single').on('click', function() {
@@ -1309,6 +1526,163 @@
                     .call(currentZoom.transform, d3.zoomIdentity);
             }
         });
+
+        // Cost chart rendering
+        let costCharts = {};
+
+        function renderCostCharts(costSummary) {
+            // Destroy previous charts
+            Object.values(costCharts).forEach(chart => chart.destroy());
+            costCharts = {};
+
+            // Prepare chart colors
+            const chartColors = [
+                '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444',
+                '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
+            ];
+
+            // By Provider Chart
+            if (costSummary.by_provider && Object.keys(costSummary.by_provider).length > 0) {
+                const providerData = Object.entries(costSummary.by_provider).sort((a, b) => b[1] - a[1]);
+                const ctx = document.getElementById('cost-by-provider-chart');
+                if (ctx) {
+                    costCharts.provider = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: providerData.map(([name]) => name.toUpperCase()),
+                            datasets: [{
+                                data: providerData.map(([, cost]) => cost.toFixed(2)),
+                                backgroundColor: chartColors
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.label + ': $' + context.parsed + '/mo';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Create legend
+                    const legendHtml = providerData.map(([name, cost], i) => `
+                        <div class="flex items-center justify-between py-1">
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 rounded-full mr-2" style="background-color: ${chartColors[i % chartColors.length]}"></span>
+                                <span>${name.toUpperCase()}</span>
+                            </div>
+                            <span class="font-semibold">$${cost.toFixed(2)}</span>
+                        </div>
+                    `).join('');
+                    $('#cost-by-provider-legend').html(legendHtml);
+                }
+            }
+
+            // By Region Chart
+            if (costSummary.by_region && Object.keys(costSummary.by_region).length > 0) {
+                const regionData = Object.entries(costSummary.by_region)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10); // Top 10 regions
+                const ctx = document.getElementById('cost-by-region-chart');
+                if (ctx) {
+                    costCharts.region = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: regionData.map(([name]) => name),
+                            datasets: [{
+                                data: regionData.map(([, cost]) => cost.toFixed(2)),
+                                backgroundColor: chartColors
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.label + ': $' + context.parsed + '/mo';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Create legend
+                    const legendHtml = regionData.map(([name, cost], i) => `
+                        <div class="flex items-center justify-between py-1">
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 rounded-full mr-2" style="background-color: ${chartColors[i % chartColors.length]}"></span>
+                                <span>${name}</span>
+                            </div>
+                            <span class="font-semibold">$${cost.toFixed(2)}</span>
+                        </div>
+                    `).join('');
+                    $('#cost-by-region-legend').html(legendHtml);
+                }
+            }
+
+            // By Type Chart
+            if (costSummary.by_type && Object.keys(costSummary.by_type).length > 0) {
+                const typeData = Object.entries(costSummary.by_type)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10); // Top 10 types
+                const ctx = document.getElementById('cost-by-type-chart');
+                if (ctx) {
+                    costCharts.type = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: typeData.map(([name]) => name.split(':').pop()),
+                            datasets: [{
+                                data: typeData.map(([, cost]) => cost.toFixed(2)),
+                                backgroundColor: chartColors
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.label + ': $' + context.parsed + '/mo';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Create legend
+                    const legendHtml = typeData.map(([name, cost], i) => `
+                        <div class="flex items-center justify-between py-1">
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 rounded-full mr-2" style="background-color: ${chartColors[i % chartColors.length]}"></span>
+                                <span>${name.split(':').pop()}</span>
+                            </div>
+                            <span class="font-semibold">$${cost.toFixed(2)}</span>
+                        </div>
+                    `).join('');
+                    $('#cost-by-type-legend').html(legendHtml);
+                }
+            }
+        }
     </script>
 </body>
 </html>
