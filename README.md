@@ -314,6 +314,82 @@ pmp-cloud-inspector ui -p 3000
 
 Then open your browser at `http://localhost:8080` and upload your exported JSON or YAML files to view and explore your cloud resources interactively.
 
+**UI Features:**
+- Full-text search across all resource attributes
+- Filter by provider, type, region
+- Sort by name, type, or cost
+- Group resources by provider, type, region, tags, or cost range
+- Interactive D3.js graph visualization
+- Resource details modal with drill-down
+- **Cost visualization with breakdown charts**
+- Min/Max cost filtering
+
+### Cost Estimation
+
+The tool includes built-in cost estimation for cloud resources. When enabled, it provides monthly cost estimates for each resource based on simplified pricing models.
+
+**Enable cost estimation:**
+```bash
+pmp-cloud-inspector inspect -c config.yaml --estimate-costs -o resources.json
+```
+
+**Cost Features:**
+- Estimated monthly costs for 15+ AWS resource types
+- Estimated monthly costs for 6 Azure resource types
+- Estimated monthly costs for 5 GCP resource types
+- Instance/VM size-based cost multipliers
+- Stopped/terminated resource detection (zero cost)
+- Cost aggregations by provider, region, type, and tags
+- Cost breakdowns by component (compute, storage, etc.)
+
+**UI Cost Visualization:**
+- Monthly cost summary card
+- Cost badges on each resource card
+- Cost filtering (min/max range)
+- Sort by cost (high to low, low to high)
+- Group by cost ranges
+- Interactive pie charts showing:
+  - Cost by Provider
+  - Cost by Region (top 10)
+  - Cost by Resource Type (top 10)
+- Detailed cost breakdown in resource modal
+
+**Example output with costs:**
+```json
+{
+  "resources": [{
+    "id": "i-1234567890",
+    "name": "my-instance",
+    "type": "aws:ec2:instance",
+    "cost": {
+      "monthly_estimate": 30.37,
+      "currency": "USD",
+      "breakdown": {
+        "compute": 30.37
+      }
+    }
+  }],
+  "metadata": {
+    "total_cost": {
+      "total": 1234.56,
+      "currency": "USD",
+      "by_provider": {
+        "aws": 800.50,
+        "azure": 300.06
+      },
+      "by_region": {
+        "us-east-1": 500.00
+      }
+    }
+  }
+}
+```
+
+**Note:** Cost estimates use simplified pricing models based on industry averages. For production use cases requiring accurate real-time pricing, integrate with:
+- AWS Cost Explorer API
+- Azure Cost Management API
+- GCP Cloud Billing Catalog API
+
 ### `compare` - Compare Exports and Detect Drift
 
 Compare two cloud resource exports to identify changes between different points in time.
@@ -506,38 +582,35 @@ Graph visualization format showing resources and their relationships. Can be con
 dot -Tpng resources.dot -o resources.png
 ```
 
-## AWS Authentication
-
-The AWS provider uses the standard AWS SDK credential chain:
-
-1. Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
-2. Shared credentials file (`~/.aws/credentials`)
-3. IAM role (when running on EC2)
-
-Required IAM permissions:
-- `iam:ListUsers`
-- `iam:ListRoles`
-- `ec2:DescribeVpcs`
-- `ec2:DescribeSubnets`
-- `ec2:DescribeSecurityGroups`
-- `ec2:DescribeInstances`
-- `ec2:DescribeRegions`
-- `ecr:DescribeRepositories`
-- `eks:ListClusters`
-- `eks:DescribeCluster`
-- `elasticloadbalancing:DescribeLoadBalancers`
-- `elasticloadbalancing:DescribeTags`
-- `lambda:ListFunctions`
-- `apigateway:GET`
-- `cloudfront:ListDistributions`
-- `memorydb:DescribeClusters`
-- `elasticache:DescribeCacheClusters`
-- `secretsmanager:ListSecrets`
-- `sts:GetCallerIdentity`
-
 ## Provider Authentication
 
 All provider credentials are configured using environment variables for security.
+
+### AWS Authentication
+
+The AWS provider uses the standard AWS SDK credential chain:
+
+1. **Environment Variables**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` (optional)
+2. **Shared Credentials File**: `~/.aws/credentials`
+3. **IAM Role**: When running on EC2 or other AWS services
+
+**Environment Variables:**
+```bash
+export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+export AWS_REGION="us-east-1"  # Optional: default region
+```
+
+**Config file:**
+```yaml
+providers:
+  - name: aws
+    regions:
+      - us-east-1
+      - us-west-2
+```
+
+See the [Provider Permissions Reference](#provider-permissions-reference) section for required IAM permissions.
 
 ### GitHub Authentication
 
@@ -671,6 +744,284 @@ Required Okta API scopes (automatically included with API tokens):
 - `okta.apps.read` - Read application information
 - `okta.authorizationServers.read` - Read authorization server information
 
+### Auth0 Authentication
+
+The Auth0 provider supports two authentication methods: Client Credentials or Management API Token.
+
+**Method 1: Client Credentials (Recommended)**
+
+**Setup:**
+1. Go to Auth0 Dashboard → Applications → Applications
+2. Create a Machine to Machine Application
+3. Authorize it for the Auth0 Management API
+4. Grant the following permissions (scopes):
+   - `read:users` - Read user information
+   - `read:roles` - Read role information
+   - `read:clients` - Read client/application information
+   - `read:resource_servers` - Read resource server/API information
+   - `read:connections` - Read connection information
+
+**Environment Variables:**
+```bash
+export AUTH0_DOMAIN="your-tenant.us.auth0.com"
+export AUTH0_CLIENT_ID="xxxxxxxxxxxxxxxxxxxx"
+export AUTH0_CLIENT_SECRET="yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+```
+
+**Method 2: Management API Token**
+
+**Setup:**
+1. Go to Auth0 Dashboard → Applications → APIs → Auth0 Management API
+2. Go to API Explorer tab
+3. Create a token with the required scopes listed above
+
+**Environment Variables:**
+```bash
+export AUTH0_DOMAIN="your-tenant.us.auth0.com"
+export AUTH0_MANAGEMENT_API_TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6..."
+```
+
+**Config file:**
+```yaml
+providers:
+  - name: auth0
+```
+
+### Azure Authentication
+
+The Azure provider uses the DefaultAzureCredential authentication flow, which supports multiple authentication methods in order:
+
+1. **Environment Variables** (Recommended for automation)
+2. **Managed Identity** (When running on Azure resources)
+3. **Azure CLI** (When logged in via `az login`)
+
+**Setup with Environment Variables:**
+1. Create a Service Principal:
+   ```bash
+   az ad sp create-for-rbac --name "pmp-cloud-inspector" --role Reader --scopes /subscriptions/{subscription-id}
+   ```
+2. The command will output the credentials you need
+
+**Environment Variables:**
+```bash
+export AZURE_SUBSCRIPTION_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+export AZURE_TENANT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"         # Optional
+export AZURE_CLIENT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"         # Optional
+export AZURE_CLIENT_SECRET="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"       # Optional
+```
+
+**Or use Azure CLI authentication:**
+```bash
+az login
+export AZURE_SUBSCRIPTION_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+```
+
+**Config file:**
+```yaml
+providers:
+  - name: azure
+    regions:
+      - eastus
+      - westus2
+```
+
+Required Azure RBAC permissions (built-in Reader role or custom role with):
+- `Microsoft.Resources/subscriptions/resourceGroups/read`
+- `Microsoft.Compute/virtualMachines/read`
+- `Microsoft.Network/virtualNetworks/read`
+- `Microsoft.Network/virtualNetworks/subnets/read`
+- `Microsoft.Storage/storageAccounts/read`
+- `Microsoft.Web/sites/read`
+- `Microsoft.Sql/servers/databases/read`
+- `Microsoft.KeyVault/vaults/read`
+
+## Provider Permissions Reference
+
+This section provides a comprehensive reference of all permissions required by each provider.
+
+### AWS Required Permissions
+
+The AWS provider requires the following IAM permissions. You can use the built-in `ReadOnlyAccess` policy or create a custom policy with these specific permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:ListUsers",
+        "iam:GetUser",
+        "iam:ListRoles",
+        "iam:GetRole",
+        "iam:ListAttachedUserPolicies",
+        "iam:ListAttachedRolePolicies",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeInstances",
+        "ec2:DescribeRegions",
+        "ecr:DescribeRepositories",
+        "ecr:ListTagsForResource",
+        "eks:ListClusters",
+        "eks:DescribeCluster",
+        "elasticloadbalancing:DescribeLoadBalancers",
+        "elasticloadbalancing:DescribeTags",
+        "elasticloadbalancing:DescribeTargetGroups",
+        "elasticloadbalancing:DescribeListeners",
+        "lambda:ListFunctions",
+        "lambda:GetFunction",
+        "lambda:ListTags",
+        "apigateway:GET",
+        "cloudfront:ListDistributions",
+        "cloudfront:GetDistribution",
+        "memorydb:DescribeClusters",
+        "elasticache:DescribeCacheClusters",
+        "elasticache:ListTagsForResource",
+        "secretsmanager:ListSecrets",
+        "secretsmanager:DescribeSecret",
+        "sns:ListTopics",
+        "sns:GetTopicAttributes",
+        "sns:ListTagsForResource",
+        "sqs:ListQueues",
+        "sqs:GetQueueAttributes",
+        "sqs:ListQueueTags",
+        "dynamodb:ListTables",
+        "dynamodb:DescribeTable",
+        "dynamodb:ListTagsOfResource",
+        "sts:GetCallerIdentity",
+        "organizations:DescribeAccount"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+**Minimum IAM Policy:**
+Create a custom IAM policy with the above permissions and attach it to your IAM user or role.
+
+### GitHub Required Permissions
+
+The GitHub provider requires a Personal Access Token with the following scopes:
+
+**Token Scopes:**
+- `read:org` - Read organization membership, teams, and settings
+- `repo` - Full control of private repositories (only needed if inspecting private repos)
+- `public_repo` - Access public repositories (alternative to `repo` for public-only)
+- `admin:org` → `read:org` - Read organization data, teams, and members
+
+**Minimum Scopes for Public Repos Only:**
+- `read:org`
+- `public_repo`
+
+**For Private Repositories:**
+- `read:org`
+- `repo`
+
+### GitLab Required Permissions
+
+The GitLab provider requires a Personal Access Token with the following scopes:
+
+**Token Scopes:**
+- `read_api` - Read-only API access (grants access to most read operations)
+- `read_repository` - Read repository content (needed for repository inspection)
+
+**Additional Permissions for Self-Hosted:**
+- Ensure the token user has at least Reporter role on groups/projects to inspect
+
+### GCP Required Permissions
+
+The GCP provider requires a Service Account with the following IAM permissions. You can use the built-in `Viewer` role or create a custom role:
+
+**Required Permissions:**
+- `compute.instances.list` - List compute instances
+- `compute.instances.get` - Get compute instance details
+- `compute.networks.list` - List VPC networks
+- `compute.networks.get` - Get VPC network details
+- `compute.subnetworks.list` - List subnetworks
+- `compute.subnetworks.get` - Get subnetwork details
+- `storage.buckets.list` - List storage buckets
+- `storage.buckets.get` - Get storage bucket details
+- `cloudfunctions.functions.list` - List cloud functions
+- `cloudfunctions.functions.get` - Get cloud function details
+- `run.services.list` - List Cloud Run services
+- `run.services.get` - Get Cloud Run service details
+- `resourcemanager.projects.get` - Get project metadata
+
+**Recommended IAM Role:**
+- Use the built-in `roles/viewer` role, or
+- Create a custom role with only the permissions listed above
+
+### JFrog Artifactory Required Permissions
+
+The JFrog provider requires either an API Key or username/password with the following permissions:
+
+**Required Permissions:**
+- Read access to all repositories
+- Read access to user management
+- Read access to group management
+- Read access to permission targets
+
+**Recommended Setup:**
+- Use an API Key associated with an admin user, or
+- Create a dedicated user with read-only admin privileges
+
+### Okta Required Permissions
+
+The Okta provider requires an API Token. API tokens automatically inherit permissions from the admin user who creates them.
+
+**Required API Scopes:**
+- `okta.users.read` - Read user information and profiles
+- `okta.groups.read` - Read group information and membership
+- `okta.apps.read` - Read application configurations
+- `okta.authorizationServers.read` - Read authorization server configurations
+
+**Recommended Setup:**
+1. Create a dedicated "service account" admin user
+2. Assign the "Read-only Administrator" role to this user
+3. Generate an API token from this user's account
+
+### Auth0 Required Permissions
+
+The Auth0 provider requires either Client Credentials (Machine-to-Machine app) or a Management API Token with the following scopes:
+
+**Required Scopes:**
+- `read:users` - Read user profiles and metadata
+- `read:roles` - Read role definitions and assignments
+- `read:clients` - Read application/client configurations
+- `read:resource_servers` - Read API (Resource Server) configurations
+- `read:connections` - Read identity provider connection configurations
+
+**Recommended Setup:**
+- Use a Machine-to-Machine application (Client Credentials flow)
+- Authorize it for the Auth0 Management API
+- Grant only the read scopes listed above (principle of least privilege)
+
+### Azure Required Permissions
+
+The Azure provider requires a Service Principal or Managed Identity with the following permissions:
+
+**Required RBAC Permissions:**
+Use the built-in `Reader` role at the subscription scope, or create a custom role with these permissions:
+
+- `Microsoft.Resources/subscriptions/read` - Read subscription information
+- `Microsoft.Resources/subscriptions/resourceGroups/read` - List and read resource groups
+- `Microsoft.Compute/virtualMachines/read` - Read virtual machine configurations
+- `Microsoft.Compute/virtualMachines/instanceView/read` - Read VM runtime state
+- `Microsoft.Network/virtualNetworks/read` - Read virtual networks
+- `Microsoft.Network/virtualNetworks/subnets/read` - Read subnets
+- `Microsoft.Storage/storageAccounts/read` - Read storage account configurations
+- `Microsoft.Web/sites/read` - Read App Service configurations
+- `Microsoft.Sql/servers/read` - Read SQL server configurations
+- `Microsoft.Sql/servers/databases/read` - Read SQL database configurations
+- `Microsoft.KeyVault/vaults/read` - Read Key Vault configurations
+
+**Recommended Setup:**
+1. Create a Service Principal: `az ad sp create-for-rbac --name "pmp-cloud-inspector" --role Reader --scopes /subscriptions/{subscription-id}`
+2. Use the `Reader` role at the subscription level for full read access
+3. Or assign specific resource group scopes if you want to limit access
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -685,18 +1036,29 @@ See LICENSE file for details.
 - [x] GCP provider support
 - [x] GitLab provider support
 - [x] JFrog Artifactory provider support
+- [x] Okta provider support
+- [x] Auth0 provider support
+- [x] Azure provider support
 - [x] Additional AWS resource types (SNS, SQS, DynamoDB)
 - [x] Resource drift detection and comparison
 - [x] Web UI for viewing and comparing exports
 - [x] Multi-platform binary releases with GoReleaser
+- [x] Advanced filtering and querying (tags, regex, dates, properties, costs)
+- [x] Concurrent resource collection for improved performance
+- [x] Full-text search across all resource attributes
+- [x] D3.js graph visualization of resource relationships
+- [x] Resource grouping in UI (by provider, type, region, tags, cost)
+- [x] **Cost estimation and tracking** with UI visualization
 
-### In Progress / Planned
-- [x] Okta provider support
-- [ ] Auth0 provider support
-- [ ] Azure provider support
-- [ ] Additional AWS resource types (RDS, S3, CloudWatch, Step Functions, etc.)
-- [ ] Advanced filtering and querying
-- [ ] Cost estimation
-- [ ] Security compliance checks
+### Planned / Future Enhancements
+- [ ] Additional AWS resource types (RDS, S3, CloudWatch, Step Functions, ECS, Fargate, etc.)
+- [ ] Real-time cost API integration (AWS Cost Explorer, Azure Cost Management, GCP Billing)
+- [ ] Historical cost tracking and trend analysis
+- [ ] Security compliance checks (CIS benchmarks, security best practices)
 - [ ] Resource tagging recommendations
-- [ ] Export to Terraform/CloudFormation
+- [ ] Export to Infrastructure-as-Code (Terraform, CloudFormation, Pulumi)
+- [ ] Historical tracking and trend analysis
+- [ ] Automated scheduling and continuous monitoring
+- [ ] Slack/Teams/Email notifications for drift detection
+- [ ] RBAC and multi-user support in UI
+- [ ] Resource optimization recommendations
