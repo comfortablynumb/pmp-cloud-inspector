@@ -196,6 +196,16 @@ pmp-cloud-inspector inspect [flags]
 - `--include-raw`: Include raw cloud provider data
 - `--concurrent int`: Number of concurrent goroutines for parallel resource collection (default 4)
 
+**Filter Flags:**
+- `--filter-tag strings`: Filter by tags (e.g., `Environment=prod`, `Name~test`, `Owner`)
+- `--filter-regex strings`: Filter by regex (e.g., `name:/prod-.*/`, `id:/^i-/`)
+- `--filter-date strings`: Filter by date range (e.g., `created:>2024-01-01`, `updated:2024-01..2024-12`)
+- `--filter-state string`: Filter by resource states (comma-separated, e.g., `running,active`)
+- `--filter-property strings`: Filter by property (e.g., `vm_size=Standard_D2s_v3`, `enabled=true`, `logins_count>100`)
+- `--filter-cost string`: Filter by cost (e.g., `100..500`, `>100`, `<500`)
+- `--filter-type strings`: Filter by resource types (e.g., `aws:ec2:instance`)
+- `--filter-provider strings`: Filter by providers (e.g., `aws`, `azure`, `gcp`)
+
 **Examples:**
 
 Export all AWS resources to JSON:
@@ -217,6 +227,66 @@ dot -Tpng resources.dot -o resources.png
 Use concurrent collection for faster resource gathering across multiple regions:
 ```bash
 pmp-cloud-inspector inspect -c config.yaml --concurrent 8 -o resources.json
+```
+
+**Advanced Filtering Examples:**
+
+Filter resources by tags:
+```bash
+# Resources with Environment tag set to production
+pmp-cloud-inspector inspect -c config.yaml --filter-tag Environment=prod
+
+# Resources with Environment tag containing "prod"
+pmp-cloud-inspector inspect -c config.yaml --filter-tag "Environment~prod"
+
+# Resources that have an Owner tag (any value)
+pmp-cloud-inspector inspect -c config.yaml --filter-tag Owner
+```
+
+Filter resources by regex patterns:
+```bash
+# VMs with names starting with "prod-"
+pmp-cloud-inspector inspect -c config.yaml --filter-regex "name:/^prod-.*/"
+
+# AWS EC2 instances only
+pmp-cloud-inspector inspect -c config.yaml --filter-regex "id:/^i-[0-9a-f]+$/"
+```
+
+Filter by resource state:
+```bash
+# Only running or active resources
+pmp-cloud-inspector inspect -c config.yaml --filter-state running,active
+```
+
+Filter by properties:
+```bash
+# Azure VMs with specific size
+pmp-cloud-inspector inspect -c config.yaml --filter-property "vm_size=Standard_D2s_v3"
+
+# Resources with login count greater than 100
+pmp-cloud-inspector inspect -c config.yaml --filter-property "logins_count>100"
+
+# Enabled resources
+pmp-cloud-inspector inspect -c config.yaml --filter-property "enabled=true"
+```
+
+Filter by date range:
+```bash
+# Resources created after 2024-01-01
+pmp-cloud-inspector inspect -c config.yaml --filter-date "created:>2024-01-01"
+
+# Resources updated in January 2024
+pmp-cloud-inspector inspect -c config.yaml --filter-date "updated:2024-01-01..2024-01-31"
+```
+
+Combine multiple filters (all filters are ANDed):
+```bash
+# Production AWS EC2 instances created in 2024
+pmp-cloud-inspector inspect -c config.yaml \
+  --filter-tag Environment=production \
+  --filter-type aws:ec2:instance \
+  --filter-date "created:>2024-01-01" \
+  -o production-ec2.json
 ```
 
 ### `ui` - Web Interface
