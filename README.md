@@ -68,7 +68,24 @@
 - Applications
 - Authorization Servers
 
-More providers (Azure, Auth0, etc.) coming soon!
+### Auth0
+- Users
+- Roles
+- Clients (Applications)
+- Resource Servers (APIs)
+- Connections
+
+### Azure
+- Resource Groups
+- Virtual Machines
+- Virtual Networks
+- Subnets
+- Storage Accounts
+- App Services
+- SQL Databases
+- Key Vaults
+
+More providers coming soon!
 
 ## Installation
 
