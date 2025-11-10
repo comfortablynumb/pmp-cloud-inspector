@@ -441,8 +441,29 @@ providers:
     regions:
       - us-east-1
       - us-west-2
+    rate_limit_ms: 0  # Optional: delay between API calls in milliseconds (0 = no rate limiting)
     options: {}
 ```
+
+**Rate Limiting:**
+
+To avoid hitting cloud provider API rate limits, you can configure a delay between API calls using the `rate_limit_ms` option:
+
+```yaml
+providers:
+  - name: aws
+    regions:
+      - us-east-1
+    rate_limit_ms: 100  # Wait 100ms between each API call
+```
+
+Common rate limit values:
+- `0` (default): No rate limiting - maximum speed
+- `50-100`: Light rate limiting for most use cases
+- `200-500`: Moderate rate limiting for accounts with many resources
+- `1000+`: Heavy rate limiting for conservative use or strict API limits
+
+Note: Rate limiting applies to each individual API call within the provider, which helps prevent throttling errors from cloud providers while maintaining reasonable collection speeds.
 
 ### Resources
 

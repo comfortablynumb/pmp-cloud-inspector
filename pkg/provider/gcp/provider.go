@@ -20,6 +20,7 @@ import (
 
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/config"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider"
+	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/ratelimit"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/resource"
 )
 
@@ -34,6 +35,7 @@ type Provider struct {
 	storageClient     *storage.Client
 	functionsClient   *functions.CloudFunctionsClient
 	runClient         *run.ServicesClient
+	rateLimiter       *ratelimit.Limiter
 }
 
 // init registers the GCP provider
@@ -108,6 +110,9 @@ func (p *Provider) Initialize(ctx context.Context, cfg config.ProviderConfig) er
 		}
 	}
 
+	// Initialize rate limiter
+	p.rateLimiter = ratelimit.NewFromMilliseconds(cfg.RateLimitMs)
+
 	return nil
 }
 
@@ -144,11 +149,17 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		if err := p.collectNetworks(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect VPCs: %w", err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	if typeSet[resource.TypeGCPStorageBucket] {
 		if err := p.collectStorageBuckets(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect storage buckets: %w", err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
 		}
 	}
 
@@ -158,11 +169,17 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 			if err := p.collectComputeInstances(ctx, collection, region); err != nil {
 				return nil, fmt.Errorf("failed to collect compute instances in %s: %w", region, err)
 			}
+			if err := p.rateLimiter.Wait(ctx); err != nil {
+				return nil, err
+			}
 		}
 
 		if typeSet[resource.TypeGCPSubnet] {
 			if err := p.collectSubnetworks(ctx, collection, region); err != nil {
 				return nil, fmt.Errorf("failed to collect subnetworks in %s: %w", region, err)
+			}
+			if err := p.rateLimiter.Wait(ctx); err != nil {
+				return nil, err
 			}
 		}
 
@@ -170,11 +187,17 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 			if err := p.collectCloudFunctions(ctx, collection, region); err != nil {
 				return nil, fmt.Errorf("failed to collect Cloud Functions in %s: %w", region, err)
 			}
+			if err := p.rateLimiter.Wait(ctx); err != nil {
+				return nil, err
+			}
 		}
 
 		if typeSet[resource.TypeGCPCloudRun] {
 			if err := p.collectCloudRunServices(ctx, collection, region); err != nil {
 				return nil, fmt.Errorf("failed to collect Cloud Run services in %s: %w", region, err)
+			}
+			if err := p.rateLimiter.Wait(ctx); err != nil {
+				return nil, err
 			}
 		}
 	}

@@ -16,10 +16,11 @@ type Config struct {
 
 // ProviderConfig defines cloud provider configuration
 type ProviderConfig struct {
-	Name     string                 `yaml:"name"`     // aws, gcp, okta, jfrog, etc.
-	Accounts []string               `yaml:"accounts"` // specific accounts to inspect (empty = all)
-	Regions  []string               `yaml:"regions"`  // specific regions (empty = all)
-	Options  map[string]interface{} `yaml:"options"`  // provider-specific options
+	Name        string                 `yaml:"name"`          // aws, gcp, okta, jfrog, etc.
+	Accounts    []string               `yaml:"accounts"`      // specific accounts to inspect (empty = all)
+	Regions     []string               `yaml:"regions"`       // specific regions (empty = all)
+	Options     map[string]interface{} `yaml:"options"`       // provider-specific options
+	RateLimitMs int                    `yaml:"rate_limit_ms"` // delay in milliseconds between API calls (0 = no rate limiting)
 }
 
 // ResourceConfig defines which resources to inspect

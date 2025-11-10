@@ -15,6 +15,9 @@ providers:
       - us-east-1
       - us-west-2
       - eu-west-1
+    # Rate limiting: delay in milliseconds between API calls (0 = no rate limiting)
+    # Recommended: 50-100ms for most use cases, 200-500ms for heavy usage
+    rate_limit_ms: 0
 
   # GitHub Provider
   # Environment Variable: GITHUB_TOKEN (required)

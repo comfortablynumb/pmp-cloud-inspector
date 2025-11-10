@@ -13,6 +13,7 @@ import (
 
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/config"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider"
+	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/ratelimit"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/resource"
 )
 
@@ -21,6 +22,7 @@ type Provider struct {
 	config         config.ProviderConfig
 	credential     *azidentity.DefaultAzureCredential
 	subscriptionID string
+	rateLimiter    *ratelimit.Limiter
 }
 
 // init registers the Azure provider
@@ -56,6 +58,9 @@ func (p *Provider) Initialize(ctx context.Context, cfg config.ProviderConfig) er
 	}
 
 	p.credential = cred
+
+	// Initialize rate limiter
+	p.rateLimiter = ratelimit.NewFromMilliseconds(cfg.RateLimitMs)
 
 	return nil
 }
@@ -94,12 +99,18 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		if err := p.collectResourceGroups(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect resource groups: %w", err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	// Collect VMs
 	if typeSet[resource.TypeAzureVM] {
 		if err := p.collectVirtualMachines(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect virtual machines: %w", err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
 		}
 	}
 
@@ -108,12 +119,18 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		if err := p.collectVirtualNetworks(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect virtual networks: %w", err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	// Collect Storage Accounts
 	if typeSet[resource.TypeAzureStorageAccount] {
 		if err := p.collectStorageAccounts(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect storage accounts: %w", err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
 		}
 	}
 
@@ -122,6 +139,9 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		if err := p.collectAppServices(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect app services: %w", err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	// Collect SQL Databases
@@ -129,12 +149,18 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		if err := p.collectSQLDatabases(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect SQL databases: %w", err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	// Collect Key Vaults
 	if typeSet[resource.TypeAzureKeyVault] {
 		if err := p.collectKeyVaults(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect key vaults: %w", err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
 		}
 	}
 
