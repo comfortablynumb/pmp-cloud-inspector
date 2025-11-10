@@ -11,6 +11,7 @@ import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"cloud.google.com/go/functions/apiv1/functionspb"
 	"cloud.google.com/go/run/apiv2/runpb"
+	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
 
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/resource"

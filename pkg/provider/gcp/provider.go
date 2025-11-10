@@ -9,13 +9,9 @@ import (
 	"os"
 
 	"cloud.google.com/go/compute/apiv1"
-	"cloud.google.com/go/compute/apiv1/computepb"
 	"cloud.google.com/go/functions/apiv1"
-	"cloud.google.com/go/functions/apiv1/functionspb"
 	"cloud.google.com/go/run/apiv2"
-	"cloud.google.com/go/run/apiv2/runpb"
 	"cloud.google.com/go/storage"
-	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/config"
