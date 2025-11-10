@@ -371,8 +371,14 @@ func (s *Server) compareResources(base, compare *resource.Resource) resourceDiff
 
 // deepEqual performs deep equality check using JSON serialization
 func (s *Server) deepEqual(a, b interface{}) bool {
-	aJSON, _ := json.Marshal(a)
-	bJSON, _ := json.Marshal(b)
+	aJSON, err := json.Marshal(a)
+	if err != nil {
+		return false
+	}
+	bJSON, err := json.Marshal(b)
+	if err != nil {
+		return false
+	}
 	return string(aJSON) == string(bJSON)
 }
 
