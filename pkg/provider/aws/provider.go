@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -131,6 +132,14 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		typeSet[t] = true
 	}
 
+	// Get concurrency from context, default to 1 for backward compatibility
+	concurrency := 1
+	if ctxConcurrency := ctx.Value("concurrency"); ctxConcurrency != nil {
+		if c, ok := ctxConcurrency.(int); ok && c > 0 {
+			concurrency = c
+		}
+	}
+
 	// Collect IAM resources (global, not regional)
 	if typeSet[resource.TypeAWSIAMUser] {
 		if err := p.collectIAMUsers(ctx, collection); err != nil {
@@ -155,109 +164,183 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		}
 	}
 
-	// Collect regional resources
-	for _, region := range p.regions {
-		regionalConfig := p.awsConfig.Copy()
-		regionalConfig.Region = region
-
-		if typeSet[resource.TypeAWSVPC] {
-			if err := p.collectVPCs(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect VPCs in %s: %w", region, err)
+	// Collect regional resources with concurrency
+	if concurrency == 1 {
+		// Sequential execution for backward compatibility
+		for _, region := range p.regions {
+			if err := p.collectRegionalResources(ctx, collection, region, typeSet); err != nil {
+				return nil, err
 			}
 		}
-
-		if typeSet[resource.TypeAWSSubnet] {
-			if err := p.collectSubnets(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect subnets in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSSecurityGroup] {
-			if err := p.collectSecurityGroups(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect security groups in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSEC2Instance] {
-			if err := p.collectEC2Instances(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect EC2 instances in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSECR] {
-			if err := p.collectECRRepositories(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect ECR repositories in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSEKSCluster] {
-			if err := p.collectEKSClusters(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect EKS clusters in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSELB] {
-			if err := p.collectClassicLoadBalancers(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect ELBs in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSALB] || typeSet[resource.TypeAWSNLB] {
-			if err := p.collectLoadBalancersV2(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect ALBs/NLBs in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSLambda] {
-			if err := p.collectLambdaFunctions(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect Lambda functions in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSAPIGateway] {
-			if err := p.collectAPIGatewayAPIs(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect API Gateways in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSMemoryDB] {
-			if err := p.collectMemoryDBClusters(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect MemoryDB clusters in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSElastiCache] {
-			if err := p.collectElastiCacheClusters(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect ElastiCache clusters in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSSecret] {
-			if err := p.collectSecrets(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect secrets in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSSNSTopic] {
-			if err := p.collectSNSTopics(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect SNS topics in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSSQSQueue] {
-			if err := p.collectSQSQueues(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect SQS queues in %s: %w", region, err)
-			}
-		}
-
-		if typeSet[resource.TypeAWSDynamoDBTable] {
-			if err := p.collectDynamoDBTables(ctx, collection, region, regionalConfig); err != nil {
-				return nil, fmt.Errorf("failed to collect DynamoDB tables in %s: %w", region, err)
-			}
+	} else {
+		// Concurrent execution
+		if err := p.collectRegionalResourcesConcurrent(ctx, collection, typeSet, concurrency); err != nil {
+			return nil, err
 		}
 	}
 
 	return collection, nil
+}
+
+// collectRegionalResources collects all resources for a single region
+func (p *Provider) collectRegionalResources(ctx context.Context, collection *resource.Collection, region string, typeSet map[resource.ResourceType]bool) error {
+	regionalConfig := p.awsConfig.Copy()
+	regionalConfig.Region = region
+
+	if typeSet[resource.TypeAWSVPC] {
+		if err := p.collectVPCs(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect VPCs in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSSubnet] {
+		if err := p.collectSubnets(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect subnets in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSSecurityGroup] {
+		if err := p.collectSecurityGroups(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect security groups in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSEC2Instance] {
+		if err := p.collectEC2Instances(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect EC2 instances in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSECR] {
+		if err := p.collectECRRepositories(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect ECR repositories in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSEKSCluster] {
+		if err := p.collectEKSClusters(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect EKS clusters in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSELB] {
+		if err := p.collectClassicLoadBalancers(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect ELBs in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSALB] || typeSet[resource.TypeAWSNLB] {
+		if err := p.collectLoadBalancersV2(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect ALBs/NLBs in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSLambda] {
+		if err := p.collectLambdaFunctions(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect Lambda functions in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSAPIGateway] {
+		if err := p.collectAPIGatewayAPIs(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect API Gateways in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSMemoryDB] {
+		if err := p.collectMemoryDBClusters(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect MemoryDB clusters in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSElastiCache] {
+		if err := p.collectElastiCacheClusters(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect ElastiCache clusters in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSSecret] {
+		if err := p.collectSecrets(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect secrets in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSSNSTopic] {
+		if err := p.collectSNSTopics(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect SNS topics in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSSQSQueue] {
+		if err := p.collectSQSQueues(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect SQS queues in %s: %w", region, err)
+		}
+	}
+
+	if typeSet[resource.TypeAWSDynamoDBTable] {
+		if err := p.collectDynamoDBTables(ctx, collection, region, regionalConfig); err != nil {
+			return fmt.Errorf("failed to collect DynamoDB tables in %s: %w", region, err)
+		}
+	}
+
+	return nil
+}
+
+// collectRegionalResourcesConcurrent collects regional resources concurrently using a worker pool
+func (p *Provider) collectRegionalResourcesConcurrent(ctx context.Context, collection *resource.Collection, typeSet map[resource.ResourceType]bool, concurrency int) error {
+	// Create channels for work distribution
+	regionChan := make(chan string, len(p.regions))
+	errorChan := make(chan error, len(p.regions))
+
+	// Mutex to protect shared collection
+	var mu sync.Mutex
+
+	// WaitGroup to track workers
+	var wg sync.WaitGroup
+
+	// Start worker pool
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for region := range regionChan {
+				// Create a temporary collection for this region
+				regionalCollection := resource.NewCollection()
+
+				// Collect resources for this region
+				if err := p.collectRegionalResources(ctx, regionalCollection, region, typeSet); err != nil {
+					errorChan <- err
+					return
+				}
+
+				// Merge into main collection with mutex protection
+				mu.Lock()
+				for _, res := range regionalCollection.Resources {
+					collection.Add(res)
+				}
+				mu.Unlock()
+			}
+		}()
+	}
+
+	// Send regions to workers
+	for _, region := range p.regions {
+		regionChan <- region
+	}
+	close(regionChan)
+
+	// Wait for all workers to complete
+	wg.Wait()
+	close(errorChan)
+
+	// Check for errors
+	for err := range errorChan {
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // DiscoverRelationships establishes relationships between AWS resources

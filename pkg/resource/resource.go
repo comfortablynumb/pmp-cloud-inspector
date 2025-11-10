@@ -63,6 +63,23 @@ const (
 	TypeOktaGroup               ResourceType = "okta:group"
 	TypeOktaApplication         ResourceType = "okta:application"
 	TypeOktaAuthorizationServer ResourceType = "okta:authorizationserver"
+
+	// Auth0 Resource Types
+	TypeAuth0User           ResourceType = "auth0:user"
+	TypeAuth0Role           ResourceType = "auth0:role"
+	TypeAuth0Client         ResourceType = "auth0:client"
+	TypeAuth0ResourceServer ResourceType = "auth0:resourceserver"
+	TypeAuth0Connection     ResourceType = "auth0:connection"
+
+	// Azure Resource Types
+	TypeAzureResourceGroup  ResourceType = "azure:resourcegroup"
+	TypeAzureVM             ResourceType = "azure:compute:vm"
+	TypeAzureVNet           ResourceType = "azure:network:vnet"
+	TypeAzureSubnet         ResourceType = "azure:network:subnet"
+	TypeAzureStorageAccount ResourceType = "azure:storage:account"
+	TypeAzureAppService     ResourceType = "azure:web:appservice"
+	TypeAzureSQLDatabase    ResourceType = "azure:sql:database"
+	TypeAzureKeyVault       ResourceType = "azure:keyvault:vault"
 )
 
 // Resource represents a cloud resource
