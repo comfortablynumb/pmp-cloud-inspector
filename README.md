@@ -89,7 +89,45 @@ More providers coming soon!
 
 ## Installation
 
+### Quick Install (Linux/macOS)
+
+Install the latest version with a single command:
+
+```bash
+# Linux (amd64)
+curl -sL https://github.com/comfortablynumb/pmp-cloud-inspector/releases/latest/download/pmp-cloud-inspector-linux-amd64 -o pmp-cloud-inspector && chmod +x pmp-cloud-inspector
+
+# Linux (arm64)
+curl -sL https://github.com/comfortablynumb/pmp-cloud-inspector/releases/latest/download/pmp-cloud-inspector-linux-arm64 -o pmp-cloud-inspector && chmod +x pmp-cloud-inspector
+
+# macOS (amd64)
+curl -sL https://github.com/comfortablynumb/pmp-cloud-inspector/releases/latest/download/pmp-cloud-inspector-darwin-amd64 -o pmp-cloud-inspector && chmod +x pmp-cloud-inspector
+
+# macOS (arm64/Apple Silicon)
+curl -sL https://github.com/comfortablynumb/pmp-cloud-inspector/releases/latest/download/pmp-cloud-inspector-darwin-arm64 -o pmp-cloud-inspector && chmod +x pmp-cloud-inspector
+```
+
+Then move the binary to your PATH:
+```bash
+sudo mv pmp-cloud-inspector /usr/local/bin/
+```
+
+### Pre-built Binaries
+
+Download the latest pre-built binaries from the [Releases](https://github.com/comfortablynumb/pmp-cloud-inspector/releases) page.
+
+Available for:
+- **Linux**: amd64, arm64
+- **macOS**: amd64 (Intel), arm64 (Apple Silicon)
+- **Windows**: amd64
+
+All binaries are built with support for all providers (AWS, GitHub, GitLab, JFrog, GCP, Okta, Auth0, Azure).
+
 ### From Source
+
+Requirements:
+- Go 1.24.7 or higher
+- Provider credentials configured (see [Provider Authentication](#provider-authentication))
 
 ```bash
 git clone https://github.com/comfortablynumb/pmp-cloud-inspector.git
@@ -98,56 +136,15 @@ cd pmp-cloud-inspector
 # Basic build (AWS and GitHub providers only)
 go build -o pmp-cloud-inspector ./cmd/inspector
 
-# Build with additional providers (requires downloading dependencies)
+# Build with all providers (requires downloading dependencies)
 go mod tidy
-go build -tags "gitlab jfrog gcp okta" -o pmp-cloud-inspector ./cmd/inspector
+go build -tags "gitlab jfrog gcp okta auth0 azure" -o pmp-cloud-inspector ./cmd/inspector
 
 # Or build with specific providers only
 go build -tags "gitlab" -o pmp-cloud-inspector ./cmd/inspector  # GitLab only
 go build -tags "gcp" -o pmp-cloud-inspector ./cmd/inspector     # GCP only
 go build -tags "okta" -o pmp-cloud-inspector ./cmd/inspector    # Okta only
-go build -tags "gitlab gcp okta" -o pmp-cloud-inspector ./cmd/inspector  # Multiple
-```
-
-### Prerequisites
-
-- Go 1.21 or higher
-- AWS credentials configured (for AWS provider)
-
-### Pre-built Binaries
-
-Download the latest pre-built binaries from the [Releases](https://github.com/comfortablynumb/pmp-cloud-inspector/releases) page.
-
-Available for:
-- Linux (amd64, arm64)
-- macOS (amd64, arm64)
-- Windows (amd64)
-
-## CI/CD
-
-The project includes comprehensive GitHub Actions workflows:
-
-- **PR Checks** (`.github/workflows/pr.yml`): Runs on pull requests to main
-  - Linting with golangci-lint
-  - Tests with race detector (`-race --count=1`)
-  - Build verification
-
-- **Main Branch** (`.github/workflows/main.yml`): Runs on merges to main
-  - Linting with golangci-lint
-  - Tests with race detector (`-race --count=1`)
-  - Build verification
-
-- **Release** (`.github/workflows/release.yml`): Triggers on semantic version tags (v*.*.*)
-  - Linting with golangci-lint
-  - Tests with race detector (`-race --count=1`)
-  - Multi-platform binary builds (Linux, macOS, Windows)
-  - Automatic GitHub release creation with binaries and checksums
-  - Changelog generation
-
-To create a release, simply push a tag with semantic versioning:
-```bash
-git tag v1.0.0
-git push origin v1.0.0
+go build -tags "azure" -o pmp-cloud-inspector ./cmd/inspector   # Azure only
 ```
 
 ## Quick Start
@@ -441,8 +438,29 @@ providers:
     regions:
       - us-east-1
       - us-west-2
+    rate_limit_ms: 0  # Optional: delay between API calls in milliseconds (0 = no rate limiting)
     options: {}
 ```
+
+**Rate Limiting:**
+
+To avoid hitting cloud provider API rate limits, you can configure a delay between API calls using the `rate_limit_ms` option:
+
+```yaml
+providers:
+  - name: aws
+    regions:
+      - us-east-1
+    rate_limit_ms: 100  # Wait 100ms between each API call
+```
+
+Common rate limit values:
+- `0` (default): No rate limiting - maximum speed
+- `50-100`: Light rate limiting for most use cases
+- `200-500`: Moderate rate limiting for accounts with many resources
+- `1000+`: Heavy rate limiting for conservative use or strict API limits
+
+Note: Rate limiting applies to each individual API call within the provider, which helps prevent throttling errors from cloud providers while maintaining reasonable collection speeds.
 
 ### Resources
 
@@ -1062,3 +1080,30 @@ See LICENSE file for details.
 - [ ] Slack/Teams/Email notifications for drift detection
 - [ ] RBAC and multi-user support in UI
 - [ ] Resource optimization recommendations
+
+## CI/CD
+
+The project includes comprehensive GitHub Actions workflows:
+
+- **PR Checks** (`.github/workflows/pr.yml`): Runs on pull requests to main
+  - Linting with golangci-lint
+  - Tests with race detector (`-race --count=1`)
+  - Build verification
+
+- **Main Branch** (`.github/workflows/main.yml`): Runs on merges to main
+  - Linting with golangci-lint
+  - Tests with race detector (`-race --count=1`)
+  - Build verification
+
+- **Release** (`.github/workflows/release.yml`): Triggers on semantic version tags (v*.*.*)
+  - Linting with golangci-lint
+  - Tests with race detector (`-race --count=1`)
+  - Multi-platform binary builds (Linux, macOS, Windows)
+  - Automatic GitHub release creation with binaries and checksums
+  - Changelog generation
+
+To create a release, simply push a tag with semantic versioning:
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```

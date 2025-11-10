@@ -14,6 +14,7 @@ import (
 
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/config"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider"
+	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/ratelimit"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/resource"
 )
 
@@ -29,8 +30,9 @@ type Provider struct {
 	stsClient *sts.Client
 
 	// Configuration
-	accounts []string
-	regions  []string
+	accounts    []string
+	regions     []string
+	rateLimiter *ratelimit.Limiter
 }
 
 // init registers the AWS provider
@@ -86,6 +88,9 @@ func (p *Provider) Initialize(ctx context.Context, cfg config.ProviderConfig) er
 		}
 		p.accounts = accounts
 	}
+
+	// Initialize rate limiter
+	p.rateLimiter = ratelimit.NewFromMilliseconds(cfg.RateLimitMs)
 
 	return nil
 }
@@ -145,22 +150,34 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		if err := p.collectIAMUsers(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect IAM users: %w", err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	if typeSet[resource.TypeAWSIAMRole] {
 		if err := p.collectIAMRoles(ctx, collection); err != nil {
 			return nil, fmt.Errorf("failed to collect IAM roles: %w", err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	if typeSet[resource.TypeAWSAccount] {
 		p.collectAccounts(collection)
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	// Collect global resources (CloudFront)
 	if typeSet[resource.TypeAWSCloudFront] {
 		if err := p.collectCloudFrontDistributions(ctx, collection, p.awsConfig); err != nil {
 			return nil, fmt.Errorf("failed to collect CloudFront distributions: %w", err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return nil, err
 		}
 	}
 
@@ -191,11 +208,17 @@ func (p *Provider) collectRegionalResources(ctx context.Context, collection *res
 		if err := p.collectVPCs(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect VPCs in %s: %w", region, err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
+		}
 	}
 
 	if typeSet[resource.TypeAWSSubnet] {
 		if err := p.collectSubnets(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect subnets in %s: %w", region, err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
 		}
 	}
 
@@ -203,11 +226,17 @@ func (p *Provider) collectRegionalResources(ctx context.Context, collection *res
 		if err := p.collectSecurityGroups(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect security groups in %s: %w", region, err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
+		}
 	}
 
 	if typeSet[resource.TypeAWSEC2Instance] {
 		if err := p.collectEC2Instances(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect EC2 instances in %s: %w", region, err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
 		}
 	}
 
@@ -215,11 +244,17 @@ func (p *Provider) collectRegionalResources(ctx context.Context, collection *res
 		if err := p.collectECRRepositories(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect ECR repositories in %s: %w", region, err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
+		}
 	}
 
 	if typeSet[resource.TypeAWSEKSCluster] {
 		if err := p.collectEKSClusters(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect EKS clusters in %s: %w", region, err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
 		}
 	}
 
@@ -227,11 +262,17 @@ func (p *Provider) collectRegionalResources(ctx context.Context, collection *res
 		if err := p.collectClassicLoadBalancers(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect ELBs in %s: %w", region, err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
+		}
 	}
 
 	if typeSet[resource.TypeAWSALB] || typeSet[resource.TypeAWSNLB] {
 		if err := p.collectLoadBalancersV2(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect ALBs/NLBs in %s: %w", region, err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
 		}
 	}
 
@@ -239,11 +280,17 @@ func (p *Provider) collectRegionalResources(ctx context.Context, collection *res
 		if err := p.collectLambdaFunctions(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect Lambda functions in %s: %w", region, err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
+		}
 	}
 
 	if typeSet[resource.TypeAWSAPIGateway] {
 		if err := p.collectAPIGatewayAPIs(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect API Gateways in %s: %w", region, err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
 		}
 	}
 
@@ -251,11 +298,17 @@ func (p *Provider) collectRegionalResources(ctx context.Context, collection *res
 		if err := p.collectMemoryDBClusters(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect MemoryDB clusters in %s: %w", region, err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
+		}
 	}
 
 	if typeSet[resource.TypeAWSElastiCache] {
 		if err := p.collectElastiCacheClusters(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect ElastiCache clusters in %s: %w", region, err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
 		}
 	}
 
@@ -263,11 +316,17 @@ func (p *Provider) collectRegionalResources(ctx context.Context, collection *res
 		if err := p.collectSecrets(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect secrets in %s: %w", region, err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
+		}
 	}
 
 	if typeSet[resource.TypeAWSSNSTopic] {
 		if err := p.collectSNSTopics(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect SNS topics in %s: %w", region, err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
 		}
 	}
 
@@ -275,11 +334,17 @@ func (p *Provider) collectRegionalResources(ctx context.Context, collection *res
 		if err := p.collectSQSQueues(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect SQS queues in %s: %w", region, err)
 		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
+		}
 	}
 
 	if typeSet[resource.TypeAWSDynamoDBTable] {
 		if err := p.collectDynamoDBTables(ctx, collection, region, regionalConfig); err != nil {
 			return fmt.Errorf("failed to collect DynamoDB tables in %s: %w", region, err)
+		}
+		if err := p.rateLimiter.Wait(ctx); err != nil {
+			return err
 		}
 	}
 
