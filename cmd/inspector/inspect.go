@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/config"
+	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/cost"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/exporter"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/filter"
 	"github.com/comfortablynumb/pmp-cloud-inspector/pkg/provider"
@@ -15,12 +16,13 @@ import (
 )
 
 var (
-	configFile  string
-	outputFile  string
-	format      string
-	pretty      bool
-	includeRaw  bool
-	concurrency int
+	configFile    string
+	outputFile    string
+	format        string
+	pretty        bool
+	includeRaw    bool
+	concurrency   int
+	estimateCosts bool
 
 	// Filter flags
 	filterTags       []string
@@ -51,6 +53,7 @@ func init() {
 	inspectCmd.Flags().BoolVarP(&pretty, "pretty", "p", true, "Pretty print output")
 	inspectCmd.Flags().BoolVar(&includeRaw, "include-raw", false, "Include raw cloud provider data")
 	inspectCmd.Flags().IntVar(&concurrency, "concurrent", 4, "Number of concurrent goroutines for parallel resource collection")
+	inspectCmd.Flags().BoolVar(&estimateCosts, "estimate-costs", false, "Estimate monthly costs for resources")
 
 	// Filter flags
 	inspectCmd.Flags().StringSliceVar(&filterTags, "filter-tag", nil, "Filter by tags (e.g., Environment=prod, Name~test, Owner)")
@@ -137,6 +140,18 @@ func runInspect(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "Total resources collected: %d\n", len(allResources.Resources))
+
+	// Estimate costs if enabled
+	if estimateCosts {
+		fmt.Fprintf(os.Stderr, "Estimating costs...\n")
+		if err := estimateResourceCosts(allResources); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to estimate costs: %v\n", err)
+		} else if allResources.Metadata.TotalCost != nil {
+			fmt.Fprintf(os.Stderr, "Estimated total monthly cost: $%.2f %s\n",
+				allResources.Metadata.TotalCost.Total,
+				allResources.Metadata.TotalCost.Currency)
+		}
+	}
 
 	// Apply filters if any
 	filters, err := buildFilters()
@@ -270,4 +285,18 @@ func buildFilters() ([]filter.Filter, error) {
 	}
 
 	return filters, nil
+}
+
+// estimateResourceCosts estimates costs for all resources in the collection
+func estimateResourceCosts(collection *resource.Collection) error {
+	// Create cost estimator registry
+	registry := cost.NewEstimatorRegistry()
+
+	// Register estimators for each provider
+	registry.Register("aws", cost.NewAWSEstimator())
+	registry.Register("azure", cost.NewAzureEstimator())
+	registry.Register("gcp", cost.NewGCPEstimator())
+
+	// Estimate costs for all resources
+	return registry.EstimateCollection(collection)
 }

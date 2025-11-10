@@ -95,8 +95,17 @@ type Resource struct {
 	Properties    map[string]interface{} `json:"properties"`
 	RawData       interface{}            `json:"raw_data,omitempty"`
 	Relationships []Relationship         `json:"relationships,omitempty"`
+	Cost          *ResourceCost          `json:"cost,omitempty"`
 	CreatedAt     *time.Time             `json:"created_at,omitempty"`
 	UpdatedAt     *time.Time             `json:"updated_at,omitempty"`
+}
+
+// ResourceCost represents cost information for a resource
+type ResourceCost struct {
+	MonthlyEstimate float64           `json:"monthly_estimate"`    // Estimated monthly cost
+	Currency        string            `json:"currency"`            // Currency code (USD, EUR, etc.)
+	Breakdown       map[string]float64 `json:"breakdown,omitempty"` // Cost breakdown by component
+	LastUpdated     time.Time         `json:"last_updated"`        // When cost was last calculated
 }
 
 // Relationship represents a connection between resources
@@ -136,6 +145,17 @@ type CollectionMetadata struct {
 	ByAccount       map[string]int                  `json:"by_account,omitempty"`
 	ByRegion        map[string]int                  `json:"by_region,omitempty"`
 	ByTypeAndRegion map[string]map[ResourceType]int `json:"by_type_and_region,omitempty"`
+	TotalCost       *CostSummary                    `json:"total_cost,omitempty"`
+}
+
+// CostSummary provides cost aggregations for the collection
+type CostSummary struct {
+	Total      float64             `json:"total"`                  // Total monthly cost estimate
+	Currency   string              `json:"currency"`               // Currency code
+	ByProvider map[string]float64  `json:"by_provider,omitempty"`  // Cost breakdown by provider
+	ByRegion   map[string]float64  `json:"by_region,omitempty"`    // Cost breakdown by region
+	ByType     map[string]float64  `json:"by_type,omitempty"`      // Cost breakdown by resource type
+	ByTag      map[string]float64  `json:"by_tag,omitempty"`       // Cost breakdown by tag values
 }
 
 // NewCollection creates a new resource collection
@@ -176,6 +196,47 @@ func (c *Collection) Add(resource *Resource) {
 			c.Metadata.ByTypeAndRegion[resource.Region] = make(map[ResourceType]int)
 		}
 		c.Metadata.ByTypeAndRegion[resource.Region][resource.Type]++
+	}
+
+	// Update cost metadata
+	if resource.Cost != nil && resource.Cost.MonthlyEstimate > 0 {
+		c.updateCostMetadata(resource)
+	}
+}
+
+// updateCostMetadata updates cost aggregations in metadata
+func (c *Collection) updateCostMetadata(resource *Resource) {
+	// Initialize cost summary if needed
+	if c.Metadata.TotalCost == nil {
+		c.Metadata.TotalCost = &CostSummary{
+			Currency:   resource.Cost.Currency,
+			ByProvider: make(map[string]float64),
+			ByRegion:   make(map[string]float64),
+			ByType:     make(map[string]float64),
+			ByTag:      make(map[string]float64),
+		}
+	}
+
+	cost := resource.Cost.MonthlyEstimate
+
+	// Update total
+	c.Metadata.TotalCost.Total += cost
+
+	// Update by provider
+	c.Metadata.TotalCost.ByProvider[resource.Provider] += cost
+
+	// Update by region
+	if resource.Region != "" {
+		c.Metadata.TotalCost.ByRegion[resource.Region] += cost
+	}
+
+	// Update by type
+	c.Metadata.TotalCost.ByType[string(resource.Type)] += cost
+
+	// Update by tags (sum costs for each tag key-value pair)
+	for key, value := range resource.Tags {
+		tagKey := key + "=" + value
+		c.Metadata.TotalCost.ByTag[tagKey] += cost
 	}
 }
 
