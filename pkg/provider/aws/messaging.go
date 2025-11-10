@@ -50,12 +50,12 @@ func (p *Provider) collectSNSTopics(ctx context.Context, collection *resource.Co
 			}
 
 			res := &resource.Resource{
-				ID:       *topic.TopicArn,
-				Type:     resource.TypeAWSSNSTopic,
-				Name:     extractTopicName(*topic.TopicArn),
-				Provider: "aws",
-				Region:   region,
-				ARN:      *topic.TopicArn,
+				ID:         *topic.TopicArn,
+				Type:       resource.TypeAWSSNSTopic,
+				Name:       extractTopicName(*topic.TopicArn),
+				Provider:   "aws",
+				Region:     region,
+				ARN:        *topic.TopicArn,
 				Properties: properties,
 				RawData:    topic,
 			}
@@ -102,12 +102,12 @@ func (p *Provider) collectSQSQueues(ctx context.Context, collection *resource.Co
 		queueARN := attrs.Attributes["QueueArn"]
 
 		res := &resource.Resource{
-			ID:       queueURL,
-			Type:     resource.TypeAWSSQSQueue,
-			Name:     extractQueueName(queueURL),
-			Provider: "aws",
-			Region:   region,
-			ARN:      queueARN,
+			ID:         queueURL,
+			Type:       resource.TypeAWSSQSQueue,
+			Name:       extractQueueName(queueURL),
+			Provider:   "aws",
+			Region:     region,
+			ARN:        queueARN,
 			Properties: properties,
 			RawData:    queueURL,
 		}
@@ -152,15 +152,15 @@ func (p *Provider) collectDynamoDBTables(ctx context.Context, collection *resour
 			}
 
 			properties := map[string]interface{}{
-				"TableStatus":       table.TableStatus,
-				"ItemCount":         table.ItemCount,
-				"TableSizeBytes":    table.TableSizeBytes,
-				"BillingModeSummary": table.BillingModeSummary,
-				"ProvisionedThroughput": table.ProvisionedThroughput,
-				"KeySchema":         table.KeySchema,
-				"AttributeDefinitions": table.AttributeDefinitions,
+				"TableStatus":            table.TableStatus,
+				"ItemCount":              table.ItemCount,
+				"TableSizeBytes":         table.TableSizeBytes,
+				"BillingModeSummary":     table.BillingModeSummary,
+				"ProvisionedThroughput":  table.ProvisionedThroughput,
+				"KeySchema":              table.KeySchema,
+				"AttributeDefinitions":   table.AttributeDefinitions,
 				"GlobalSecondaryIndexes": table.GlobalSecondaryIndexes,
-				"LocalSecondaryIndexes": table.LocalSecondaryIndexes,
+				"LocalSecondaryIndexes":  table.LocalSecondaryIndexes,
 			}
 
 			if table.StreamSpecification != nil {
@@ -169,12 +169,12 @@ func (p *Provider) collectDynamoDBTables(ctx context.Context, collection *resour
 			}
 
 			res := &resource.Resource{
-				ID:       *table.TableName,
-				Type:     resource.TypeAWSDynamoDBTable,
-				Name:     *table.TableName,
-				Provider: "aws",
-				Region:   region,
-				ARN:      aws.ToString(table.TableArn),
+				ID:         *table.TableName,
+				Type:       resource.TypeAWSDynamoDBTable,
+				Name:       *table.TableName,
+				Provider:   "aws",
+				Region:     region,
+				ARN:        aws.ToString(table.TableArn),
 				Properties: properties,
 				RawData:    table,
 			}
