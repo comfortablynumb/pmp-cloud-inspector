@@ -110,6 +110,9 @@ func (p *Provider) GetSupportedResourceTypes() []resource.ResourceType {
 		resource.TypeAWSMemoryDB,
 		resource.TypeAWSElastiCache,
 		resource.TypeAWSSecret,
+		resource.TypeAWSSNSTopic,
+		resource.TypeAWSSQSQueue,
+		resource.TypeAWSDynamoDBTable,
 	}
 }
 
@@ -232,6 +235,24 @@ func (p *Provider) CollectResources(ctx context.Context, types []resource.Resour
 		if typeSet[resource.TypeAWSSecret] {
 			if err := p.collectSecrets(ctx, collection, region, regionalConfig); err != nil {
 				return nil, fmt.Errorf("failed to collect secrets in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSSNSTopic] {
+			if err := p.collectSNSTopics(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect SNS topics in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSSQSQueue] {
+			if err := p.collectSQSQueues(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect SQS queues in %s: %w", region, err)
+			}
+		}
+
+		if typeSet[resource.TypeAWSDynamoDBTable] {
+			if err := p.collectDynamoDBTables(ctx, collection, region, regionalConfig); err != nil {
+				return nil, fmt.Errorf("failed to collect DynamoDB tables in %s: %w", region, err)
 			}
 		}
 	}

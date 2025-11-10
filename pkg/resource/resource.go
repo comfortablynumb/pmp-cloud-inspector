@@ -28,6 +28,9 @@ const (
 	TypeAWSMemoryDB      ResourceType = "aws:memorydb:cluster"
 	TypeAWSElastiCache   ResourceType = "aws:elasticache:cluster"
 	TypeAWSSecret        ResourceType = "aws:secretsmanager:secret"
+	TypeAWSSNSTopic      ResourceType = "aws:sns:topic"
+	TypeAWSSQSQueue      ResourceType = "aws:sqs:queue"
+	TypeAWSDynamoDBTable ResourceType = "aws:dynamodb:table"
 
 	// GitHub Resource Types
 	TypeGitHubOrganization ResourceType = "github:organization"
