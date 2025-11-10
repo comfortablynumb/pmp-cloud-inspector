@@ -14,11 +14,12 @@ import (
 )
 
 var (
-	configFile string
-	outputFile string
-	format     string
-	pretty     bool
-	includeRaw bool
+	configFile  string
+	outputFile  string
+	format      string
+	pretty      bool
+	includeRaw  bool
+	concurrency int
 )
 
 var inspectCmd = &cobra.Command{
@@ -38,10 +39,19 @@ func init() {
 	inspectCmd.Flags().StringVarP(&format, "format", "f", "", "Output format: json, yaml, dot (overrides config)")
 	inspectCmd.Flags().BoolVarP(&pretty, "pretty", "p", true, "Pretty print output")
 	inspectCmd.Flags().BoolVar(&includeRaw, "include-raw", false, "Include raw cloud provider data")
+	inspectCmd.Flags().IntVar(&concurrency, "concurrent", 4, "Number of concurrent goroutines for parallel resource collection")
 }
+
+// contextKey is a type for context keys to avoid collisions
+type contextKey string
+
+const concurrencyKey contextKey = "concurrency"
 
 func runInspect(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
+
+	// Add concurrency setting to context
+	ctx = context.WithValue(ctx, concurrencyKey, concurrency)
 
 	// Load configuration
 	cfg, err := config.LoadConfig(configFile)

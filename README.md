@@ -177,6 +177,7 @@ pmp-cloud-inspector inspect [flags]
 - `-f, --format string`: Output format: json, yaml, dot (overrides config)
 - `-p, --pretty`: Pretty print output (default true)
 - `--include-raw`: Include raw cloud provider data
+- `--concurrent int`: Number of concurrent goroutines for parallel resource collection (default 4)
 
 **Examples:**
 
@@ -194,6 +195,11 @@ Generate a GraphViz visualization:
 ```bash
 pmp-cloud-inspector inspect -c config.yaml -f dot -o resources.dot
 dot -Tpng resources.dot -o resources.png
+```
+
+Use concurrent collection for faster resource gathering across multiple regions:
+```bash
+pmp-cloud-inspector inspect -c config.yaml --concurrent 8 -o resources.json
 ```
 
 ### `ui` - Web Interface
