@@ -18,6 +18,9 @@ import (
 //go:embed templates/*
 var templatesFS embed.FS
 
+//go:embed static/*
+var staticFS embed.FS
+
 // Server represents the UI web server
 type Server struct {
 	port      int
@@ -39,6 +42,10 @@ func (s *Server) Start() error {
 	http.HandleFunc("/upload", s.handleUpload)
 	http.HandleFunc("/compare", s.handleCompare)
 	http.HandleFunc("/api/stats", s.handleStats)
+
+	// Serve static files
+	staticFileServer := http.FileServer(http.FS(staticFS))
+	http.Handle("/static/", staticFileServer)
 
 	addr := fmt.Sprintf(":%d", s.port)
 

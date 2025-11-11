@@ -18,6 +18,13 @@ bin/
 
 # Dependency directories
 vendor/
+node_modules/
+
+# NPM files
+package-lock.json
+pkg/ui/package.json
+pkg/ui/input.css
+pkg/ui/tailwind.config.js
 
 # Output files
 *.json
